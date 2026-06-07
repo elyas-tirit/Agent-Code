@@ -61,7 +61,8 @@ Settings (`agentCode.*`): `openDashboardOnStartup, backend, claudePath, userName
 - `src/panels/{AgentsDashboardPanel,DesignWorkspacePanel}.ts` — i due webview panel; `html.ts` (CSP+nonce+media URI); `shared.ts` (settings, code-tree/file, attachments, mimeForExt).
 - `src/extension.ts` — attivazione, comandi, `getManager` (memoizza la **promise**), restore da `globalState`, notifiche OS (solo a finestra non a fuoco), serializer (riapre la dashboard al reload), `deactivate` flush.
 - `webview/` — `App.tsx`, `vscode.ts` (post/onHostMessage/mediaUrl/bootstrap), `ui/{Icon,Avatar,Pill,Modal,SettingsModal,UsageModal}`, `views/dashboard/{AgentsDashboard,AgentCard,NewAgentCard,TopBar}`, `views/design/{DesignWorkspace,PreviewCanvas,ChatPanel,Composer,ApprovalModal,QuestionModal,PlanModal,CodeView}`.
-- `media/picker.js` — element picker stile Cursor (iniettato nell'iframe; hover stroke + componente React + sorgente).
+- `media/picker.js` — element picker stile Cursor (iniettato nell'iframe dal proxy; hover stroke + componente React + sorgente file:line completa). Risponde a `ac-ping` per riconfermare il ready dopo ogni load.
+- `src/preview/PreviewProxy.ts` — reverse proxy locale (no-deps) che rende il picker cross-origin out-of-the-box: forward al dev server, injection HTML, proxy WebSocket, strip header di framing/CSP, retarget a caldo. Avviato/disposto da `DesignWorkspacePanel`.
 - `fork/` — Fase 3: `setup-fork.sh` (clone+branding+embed+chrome), `product.overlay.json` (branding + `configurationDefaults` full-bleed), `apply-chrome.mjs` (injector idempotente ancorato della titlebar greeting+Session), README.
 - `scripts/usage-probe.mjs` — diagnostica usage reale dell'SDK.
 
@@ -78,7 +79,7 @@ Settings (`agentCode.*`): `openDashboardOnStartup, backend, claudePath, userName
 ## Limiti noti / COSA MANCA ❗ (vedi anche "Next step")
 
 1. **Fase 3 fork**: scaffold + branding + **patch della chrome scritta e auto-applicata** (`fork/apply-chrome.mjs` inietta greeting+Session in `titlebarPart.ts`; rail/landing/status = `configurationDefaults` in `product.json`, niente patch al sorgente). L'injector è **verificato sul sorgente reale VS Code 1.96.0** (ancorato + idempotente) ma **non ancora compilato dentro VS Code**: resta da fare in locale il clone multi-GB + `npm install` pesante + `./scripts/code.sh`. È la parte che separa "estensione" da "app full-bleed tipo Cursor".
-2. **Select cross-origin**: il picker funziona same-origin o con `media/picker.js` aggiunto all'app; su `localhost` out-of-the-box no (limite browser). Mapping `file:line` solo via fiber `_debugSource` (dev-only).
+2. **Select cross-origin**: ✅ risolto out-of-the-box dal **`PreviewProxy`** (`src/preview/PreviewProxy.ts`) — reverse proxy locale che inietta `picker.js` nell'HTML del dev server, proxa i WebSocket (HMR), strippa `x-frame-options`/CSP. L'iframe carica il proxy; il picker comunica via postMessage. 18 test funzionali verdi. Mapping `file:line` ora risolto a **workspace-relative** (apribile da Claude); resta basato su fiber `_debugSource`, che esiste solo in **dev** (Vite/CRA/Next dev lo popolano; build di produzione no — limite intrinseco di React).
 3. **Usage %**: l'SDK **non espone `utilization`** per account Team (solo token+stato+reset). Il % del plugin Claude verrebbe da un endpoint claude.ai non documentato.
 4. **Code view** = viewer read-only, non editor né refresh live legato alle modifiche dell'agente.
 5. **Figma MCP**: cablato (SSE `127.0.0.1:3845`), richiede "Dev Mode MCP server" attivo in Figma; round-trip non verificato dal vivo.

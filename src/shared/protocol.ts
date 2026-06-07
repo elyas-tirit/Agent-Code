@@ -255,7 +255,11 @@ export interface DesignState {
   status: AgentStatus;
   mode: PermissionMode;
   designMode: DesignMode;
+  /** URL shown in the preview URL bar (the real dev server the user typed). */
   previewUrl: string;
+  /** What the iframe actually loads: the local proxy that injects the picker.
+   *  Empty when the proxy couldn't start → the iframe falls back to previewUrl. */
+  proxyUrl?: string;
   usage: UsageInfo;
   messages: ChatMessage[];
   selected?: SelectedComponent;
@@ -302,7 +306,8 @@ export type HostMessage =
   | { type: "chat/cleared" }
   | { type: "code/tree"; nodes: CodeNode[] }
   | { type: "code/file"; path: string; content: string; language: string }
-  | { type: "settings/values"; settings: AppSettings };
+  | { type: "settings/values"; settings: AppSettings }
+  | { type: "preview/proxy"; proxyUrl: string; previewUrl: string };
 
 // ---------------------------------------------------------------------------
 // Webview -> Extension

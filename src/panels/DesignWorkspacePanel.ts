@@ -1,7 +1,9 @@
 import * as vscode from "vscode";
+import * as fs from "node:fs";
 import { AgentManager } from "../agents/AgentManager";
 import { AgentSession } from "../agents/types";
 import { AgentSettings, ClientMessage, DesignState, EffortLevel, HostMessage } from "../shared/protocol";
+import { PreviewProxy } from "../preview/PreviewProxy";
 import { getWebviewHtml } from "./html";
 import {
   attachmentFromFile,
@@ -26,12 +28,13 @@ export class DesignWorkspacePanel {
   private ownsSession = false;
   private state: DesignState;
   private mediaUri: string;
+  private proxy: PreviewProxy;
 
-  static createOrShow(
+  static async createOrShow(
     context: vscode.ExtensionContext,
     manager: AgentManager,
     agentId?: string,
-  ): void {
+  ): Promise<void> {
     const key = agentId ?? DETACHED_KEY;
     const existing = DesignWorkspacePanel.panels.get(key);
     if (existing) {
@@ -49,10 +52,9 @@ export class DesignWorkspacePanel {
         localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, "dist")],
       },
     );
-    DesignWorkspacePanel.panels.set(
-      key,
-      new DesignWorkspacePanel(panel, context, manager, agentId, key),
-    );
+    const instance = new DesignWorkspacePanel(panel, context, manager, agentId, key);
+    DesignWorkspacePanel.panels.set(key, instance);
+    await instance.init();
   }
 
   private constructor(
@@ -87,10 +89,42 @@ export class DesignWorkspacePanel {
     this.mediaUri = panel.webview
       .asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "dist", "webview", "media"))
       .toString();
-    this.panel.webview.html = getWebviewHtml(panel.webview, context.extensionUri, "design", this.state);
+
+    // The preview proxy injects the Cursor-style picker into the dev server's HTML
+    // so element-select works cross-origin out of the box (see PreviewProxy).
+    this.proxy = new PreviewProxy(this.readPickerSource());
+  }
+
+  private readPickerSource(): string {
+    try {
+      const p = vscode.Uri.joinPath(
+        this.context.extensionUri,
+        "dist",
+        "webview",
+        "media",
+        "picker.js",
+      ).fsPath;
+      return fs.readFileSync(p, "utf8");
+    } catch {
+      return "";
+    }
+  }
+
+  /** Start the proxy, wire the webview, then render. Awaited by createOrShow so the
+   *  iframe loads through the proxy from the first paint (no raw → proxy reload flash). */
+  private async init(): Promise<void> {
     this.panel.webview.onDidReceiveMessage((m: ClientMessage) => this.handle(m), null, this.disposables);
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
-
+    try {
+      this.state.proxyUrl = await this.proxy.start(this.state.previewUrl);
+    } catch {
+      // Proxy couldn't bind → iframe falls back to the raw URL (area-select still works).
+    }
+    if (this.disposed) {
+      this.proxy.dispose();
+      return;
+    }
+    this.panel.webview.html = getWebviewHtml(this.panel.webview, this.context.extensionUri, "design", this.state);
     if (this.agentId) void this.ensureSession();
   }
 
@@ -208,6 +242,11 @@ export class DesignWorkspacePanel {
         break;
       case "design/setUrl":
         this.state.previewUrl = message.url;
+        // Re-point the (stable) proxy and tell the webview to reload the iframe.
+        if (this.state.proxyUrl) {
+          this.proxy.setTarget(message.url);
+          this.post({ type: "preview/proxy", proxyUrl: this.proxy.baseUrl, previewUrl: message.url });
+        }
         break;
       case "design/selectComponent":
         this.state.selected = message.component;
@@ -330,11 +369,15 @@ export class DesignWorkspacePanel {
         let text = message.text;
         if (message.component) {
           const c = message.component;
-          const loc = c.file ? `${c.file}${c.line ? `:${c.line}` : ""}` : c.label;
+          // The picker reports the on-disk file (absolute). Make it workspace-relative
+          // so Claude can open it directly (file:line).
+          const relFile = c.file ? vscode.workspace.asRelativePath(c.file, false) : "";
+          const loc = relFile ? `${relFile}${c.line ? `:${c.line}` : ""}` : c.label;
           const ctx = [
             `Elemento: ${loc}`,
             c.component ? `Componente React: <${c.component}>` : "",
-            c.source ? `Sorgente: ${c.source}` : "",
+            // Redundant once we have a real file:line; keep only as a fallback.
+            !relFile && c.source ? `Sorgente: ${c.source}` : "",
             c.tag ? `Tag: <${c.tag}>` : "",
             c.text ? `Testo: "${c.text}"` : "",
             c.selector ? `Selettore CSS: ${c.selector}` : "",
@@ -364,6 +407,7 @@ export class DesignWorkspacePanel {
   private dispose(): void {
     this.disposed = true;
     DesignWorkspacePanel.panels.delete(this.key);
+    this.proxy.dispose();
     if (this.ownsSession) this.session?.stop();
     this.panel.dispose();
     while (this.disposables.length) this.disposables.pop()?.dispose();

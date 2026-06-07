@@ -5,7 +5,13 @@ import { mediaUrl } from "../../vscode";
 
 interface PreviewCanvasProps {
   mode: DesignMode;
+  /** Real dev-server URL: shown in the URL bar and attached to selections. */
   url: string;
+  /** What the iframe loads — the local proxy that injects the picker (falls back
+   *  to `url` when the proxy isn't available). */
+  proxyUrl?: string;
+  /** Bumped by the host to force an iframe reload (e.g. after the URL changes). */
+  reloadKey?: number;
   onSetUrl: (url: string) => void;
   onSelect: (component: SelectedComponent) => void;
 }
@@ -52,8 +58,9 @@ function mv(e){if(!on)return;var el=document.elementFromPoint(e.clientX,e.client
 function ck(e){if(!on)return;e.preventDefault();e.stopPropagation();var el=cur||document.elementFromPoint(e.clientX,e.clientY);if(!el)return;parent.postMessage({source:'ac-picker',type:'ac-picked',info:{tag:el.tagName.toLowerCase(),id:el.id||'',cls:(el.className&&el.className.toString())||'',text:(el.innerText||el.textContent||'').trim().slice(0,160),selector:sel(el)}},'*');dis();}
 function en(){on=true;document.addEventListener('mousemove',mv,true);document.addEventListener('click',ck,true);if(document.body)document.body.style.cursor='crosshair';}
 function dis(){on=false;document.removeEventListener('mousemove',mv,true);document.removeEventListener('click',ck,true);cur=null;if(box)box.style.display='none';if(document.body)document.body.style.cursor='';}
-window.addEventListener('message',function(e){var d=e.data||{};if(d.source!=='ac-host')return;if(d.type==='ac-pick')(d.on?en:dis)();});
-parent.postMessage({source:'ac-picker',type:'ac-picker-ready'},'*');})();`;
+function rdy(){parent.postMessage({source:'ac-picker',type:'ac-picker-ready'},'*');}
+window.addEventListener('message',function(e){var d=e.data||{};if(d.source!=='ac-host')return;if(d.type==='ac-pick')(d.on?en:dis)();else if(d.type==='ac-ping')rdy();});
+rdy();})();`;
 
 function ToolbarButton({
   icon,
@@ -79,7 +86,8 @@ function ToolbarButton({
   );
 }
 
-export function PreviewCanvas({ mode, url, onSetUrl, onSelect }: PreviewCanvasProps) {
+export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSelect }: PreviewCanvasProps) {
+  const iframeSrc = proxyUrl || url;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -133,6 +141,8 @@ export function PreviewCanvas({ mode, url, onSetUrl, onSelect }: PreviewCanvasPr
           selector: info.selector,
           component: info.component || undefined,
           source: info.sourceLoc || undefined,
+          file: info.sourceFile || undefined,
+          line: info.sourceLine || undefined,
         });
         setSelecting(false);
       }
@@ -162,6 +172,7 @@ export function PreviewCanvas({ mode, url, onSetUrl, onSelect }: PreviewCanvasPr
   const onIframeLoad = () => {
     setPickerReady(false);
     try {
+      // Same-origin fallback injection (no-op cross-origin — the proxy injects there).
       const doc = iframeRef.current?.contentDocument;
       if (doc && doc.body) {
         const s = doc.createElement("script");
@@ -169,8 +180,12 @@ export function PreviewCanvas({ mode, url, onSetUrl, onSelect }: PreviewCanvasPr
         doc.body.appendChild(s);
       }
     } catch {
-      /* cross-origin: rely on media/picker.js added to the app, or area fallback */
+      /* cross-origin: the preview proxy injects the picker server-side */
     }
+    // The proxy-injected picker runs before this load event (which reset
+    // pickerReady), so ping it to re-confirm readiness. postMessage works
+    // cross-origin; the picker replies with ac-picker-ready.
+    iframeRef.current?.contentWindow?.postMessage({ source: "ac-host", type: "ac-ping" }, "*");
   };
 
   const refresh = () => {
@@ -406,8 +421,9 @@ export function PreviewCanvas({ mode, url, onSetUrl, onSelect }: PreviewCanvasPr
           }}
         >
           <iframe
+            key={reloadKey ?? 0}
             ref={iframeRef}
-            src={url}
+            src={iframeSrc}
             title="preview"
             onLoad={onIframeLoad}
             className="h-full w-full border-0 bg-white"

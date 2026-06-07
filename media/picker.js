@@ -44,31 +44,39 @@
     return parts.join(" > ");
   }
 
-  // Walk the React fiber to find the nearest component name + source file:line.
+  // Walk the React fiber to find the nearest component name + source location.
+  // `_debugSource` is populated in dev by the JSX source transform (Vite's React
+  // plugin, CRA, Next dev). We send the FULL absolute path + line so the host can
+  // resolve it to a workspace-relative file:line Claude can open.
   function fiberInfo(el) {
     try {
       var key = Object.keys(el).find(function (k) {
         return k.indexOf("__reactFiber$") === 0 || k.indexOf("__reactInternalInstance$") === 0;
       });
       var fiber = key ? el[key] : null;
-      var name = "", source = "", hops = 0;
-      while (fiber && hops < 30) {
+      var name = "", file = "", line = 0, hops = 0;
+      while (fiber && hops < 40) {
         var t = fiber.type;
         if (t && (typeof t === "function" || typeof t === "object")) {
           var nm = t.displayName || t.name || (t.render && (t.render.displayName || t.render.name));
           if (nm && !name && nm[0] === nm[0].toUpperCase()) name = nm;
         }
-        var ds = fiber._debugSource;
-        if (ds && ds.fileName && !source) {
-          source = ds.fileName.split("/").slice(-2).join("/") + ":" + ds.lineNumber;
+        var ds =
+          fiber._debugSource ||
+          (fiber.pendingProps && fiber.pendingProps.__source) ||
+          (fiber.memoizedProps && fiber.memoizedProps.__source);
+        if (ds && ds.fileName && !file) {
+          file = ds.fileName;
+          line = ds.lineNumber || 0;
         }
-        if (name && source) break;
+        if (name && file) break;
         fiber = fiber.return;
         hops++;
       }
-      return { component: name, source: source };
+      var disp = file ? file.split("/").pop() + (line ? ":" + line : "") : "";
+      return { component: name, file: file, line: line, source: disp };
     } catch (e) {
-      return { component: "", source: "" };
+      return { component: "", file: "", line: 0, source: "" };
     }
   }
 
@@ -107,6 +115,8 @@
           selector: selectorFor(el),
           component: fi.component,
           sourceLoc: fi.source,
+          sourceFile: fi.file,
+          sourceLine: fi.line,
         },
       },
       "*",
@@ -129,10 +139,14 @@
     if (document.body) document.body.style.cursor = "";
   }
 
+  function announce() {
+    parent.postMessage({ source: "ac-picker", type: "ac-picker-ready" }, "*");
+  }
   window.addEventListener("message", function (e) {
     var d = e.data || {};
     if (d.source !== "ac-host") return;
     if (d.type === "ac-pick") (d.on ? enable : disable)();
+    else if (d.type === "ac-ping") announce(); // host re-confirms readiness after (re)load
   });
 
   parent.postMessage({ source: "ac-picker", type: "ac-picker-ready" }, "*");

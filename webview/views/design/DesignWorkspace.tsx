@@ -86,6 +86,7 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
   const [plan, setPlan] = useState<PlanRequest | undefined>(initial?.pendingPlan);
   const [usageOpen, setUsageOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [chatWidth, setChatWidth] = useState(420);
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -118,6 +119,11 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
           break;
         case "usage/update":
           setState((s) => ({ ...s, usage: msg.usage }));
+          break;
+        case "preview/proxy":
+          // Host re-pointed the preview proxy (URL changed) — reload the iframe.
+          setState((s) => ({ ...s, proxyUrl: msg.proxyUrl, previewUrl: msg.previewUrl }));
+          setReloadKey((k) => k + 1);
           break;
         case "chat/append":
           setMessages((prev) =>
@@ -208,6 +214,8 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
       <PreviewCanvas
         mode={state.designMode}
         url={state.previewUrl}
+        proxyUrl={state.proxyUrl}
+        reloadKey={reloadKey}
         onSetUrl={(url) => {
           setState((s) => ({ ...s, previewUrl: url }));
           post({ type: "design/setUrl", url });
