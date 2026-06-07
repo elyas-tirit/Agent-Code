@@ -88,12 +88,12 @@ Settings (`agentCode.*`): `openDashboardOnStartup, backend, claudePath, userName
 5. **Figma MCP**: cablato (SSE `127.0.0.1:3845`), richiede "Dev Mode MCP server" attivo in Figma; round-trip non verificato dal vivo.
 6. **Edge minori**: aprire un agente *live* nell'esatto ms in cui streamma può perdere qualche delta (recuperato al reopen); `setMode` su agente dormiente risveglia un processo.
 7. **Hardening**: ✅ affrontato. (a) Persistenza spostata su **file** (`globalStorage/agents.json`, scrittura atomica tmp+rename, `flushSync` allo shutdown, migrazione one-time dal vecchio `globalState`). (b) Stato backend **segnalato**: status bar persistente + warning azionabile quando si cade in mock pur volendo Claude reale (niente più fallback silenzioso). (c) **Test minimi**: `npm test` (21 test su PreviewProxy, transcript reducer, JsonFileStore; runner in `scripts/test.mjs`, file in `tests/`). Resta scoperto il grosso della UI webview (test E2E).
-8. **Cosmetico**: committato in locale ma **non ancora pushato** (push bloccato dietro conferma di Elyas). Icona estensione aggiunta (`media/icon.png` 256×256, robot brandizzato); video compresso 22MB→1.8MB (720p/24fps/crf30, è uno sfondo al 6%). Il vsix è ~70MB (dominato dall'SDK in `node_modules`, inevitabile).
+8. **Cosmetico**: ✅ **committato e pushato** su `github.com/elyas-tirit/Agent-Code` (branch `main`, history riscritta così il video parte già compresso — i 22MB originali non sono mai entrati nella history pubblica; force-push che ha sostituito lo stub iniziale di GitHub). Icona estensione (`media/icon.png` 256×256); video 22MB→1.8MB (720p/24fps/crf30, sfondo al 6%); vsix ~70MB (dominato dall'SDK, inevitabile).
 9. **Tab agente non riaperti** al reload (solo la dashboard; li riapri da lì).
 
 ## Next step (ordine consigliato)
 
-1. **Commit + push** su `github.com/elyas-tirit/Agent-Code` (mai fatto — mettere al sicuro il lavoro). Branch + commit, poi push.
+1. ✅ **FATTO** — Commit + push su `github.com/elyas-tirit/Agent-Code` (branch `main`, 6 commit, history lean). Il lavoro è al sicuro.
 2. **Fase 3 fork**: `./fork/setup-fork.sh` in locale (clona VS Code, applica branding, imbarca il `.vsix`), poi scrivere le 2-3 patch minime della chrome (file indicati in `fork/README.md`). È il salto ad app vera.
 3. **Rifinire il .vsix**: comprimere `media/bg-loop.mp4`, aggiungere icona estensione.
 4. **Picker cross-origin out-of-the-box** (auto-serve `picker.js` / proxy same-origin) + mapping al sorgente → select davvero "Cursor".
