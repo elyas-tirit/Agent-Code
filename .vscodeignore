@@ -1,0 +1,16 @@
+.vscode/**
+src/**
+webview/**
+scripts/**
+fork/**
+preview/**
+*.ts
+*.tsx
+tsconfig*.json
+vite.config.ts
+esbuild.mjs
+.gitignore
+media/**
+*.png
+**/*.map
+!dist/**

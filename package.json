@@ -1,0 +1,146 @@
+{
+  "name": "agent-code",
+  "displayName": "Agent Code",
+  "description": "Designer-friendly VS Code mod: multi-agent dashboard + Design/Preview/Code workspace, powered by the Claude Agent SDK.",
+  "version": "0.0.1",
+  "publisher": "veliu",
+  "license": "MIT",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elyas-tirit/Agent-Code.git"
+  },
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "agentCode.openDashboard",
+        "title": "Agent Code: Open Agents Dashboard",
+        "category": "Agent Code"
+      },
+      {
+        "command": "agentCode.openDesignWorkspace",
+        "title": "Agent Code: Open Design Workspace",
+        "category": "Agent Code"
+      },
+      {
+        "command": "agentCode.newAgent",
+        "title": "Agent Code: New Agent",
+        "category": "Agent Code"
+      },
+      {
+        "command": "agentCode.toggleImmersive",
+        "title": "Agent Code: Immersive Mode (full screen)",
+        "category": "Agent Code"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "agentCode.toggleImmersive",
+        "key": "ctrl+alt+i",
+        "mac": "cmd+alt+i"
+      }
+    ],
+    "configuration": {
+      "title": "Agent Code",
+      "properties": {
+        "agentCode.openDashboardOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open the Agents dashboard automatically when VS Code starts."
+        },
+        "agentCode.backend": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "mock",
+            "claude"
+          ],
+          "default": "auto",
+          "description": "Agent backend. 'auto' uses real Claude Code via the Claude Agent SDK when installed (reusing your existing Claude Code login — no API key needed), otherwise falls back to a simulated mock backend."
+        },
+        "agentCode.claudePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the `claude` CLI to drive (so the SDK reuses your logged-in subscription). Leave empty to auto-detect."
+        },
+        "agentCode.userName": {
+          "type": "string",
+          "default": "",
+          "description": "Name shown in the greeting. Leave empty to derive it from your OS username."
+        },
+        "agentCode.fullAccess": {
+          "type": "boolean",
+          "default": true,
+          "description": "Give agents maximum capability: disable the command sandbox, allow dangerous skips, and grant access to your home directory. Turn off for a more locked-down setup."
+        },
+        "agentCode.defaultMode": {
+          "type": "string",
+          "enum": ["default", "plan", "acceptEdits", "bypassPermissions"],
+          "default": "bypassPermissions",
+          "description": "Permission mode new agents start in. 'bypassPermissions' (Auto) = no prompts, can do everything; 'default' (Ask) = asks for each action."
+        },
+        "agentCode.effort": {
+          "type": "string",
+          "enum": ["", "low", "medium", "high", "xhigh", "max"],
+          "default": "",
+          "description": "Reasoning effort for new agents. Empty = SDK default."
+        },
+        "agentCode.model": {
+          "type": "string",
+          "default": "",
+          "description": "Model id for new agents (e.g. claude-opus-4-8). Empty = default."
+        },
+        "agentCode.previewUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "Default dev-server URL shown in the Design workspace preview."
+        },
+        "agentCode.figmaMcpUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:3845/sse",
+          "description": "Figma desktop Dev-Mode MCP server URL. Lets agents pull Figma designs when you attach a Figma link. Enable 'Dev Mode MCP server' in Figma > Preferences. Leave empty to disable."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build:ext": "node esbuild.mjs",
+    "build:webview": "vite build",
+    "build": "npm run build:webview && npm run build:ext",
+    "watch:ext": "node esbuild.mjs --watch",
+    "watch:webview": "vite build --watch",
+    "watch": "npm-run-all -p watch:ext watch:webview",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.webview.json",
+    "package": "npm run build && vsce package -o agent-code.vsix"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/vscode": "^1.96.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "@vscode/vsce": "^3.2.0",
+    "esbuild": "^0.24.0",
+    "npm-run-all": "^4.1.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.168"
+  }
+}

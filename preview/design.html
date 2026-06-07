@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+    <link href="/dist/webview/webview.css" rel="stylesheet" />
+    <title>AC — Design preview</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.acquireVsCodeApi = () => ({ postMessage() {}, getState() {}, setState() {} });
+      const qp = new URLSearchParams(location.search);
+      const clickTitle = qp.get("click");
+      const hoverTitle = qp.get("hover");
+      if (clickTitle || hoverTitle) {
+        let tries = 0;
+        const iv = setInterval(() => {
+          const all = [...document.querySelectorAll("button")];
+          if (clickTitle) {
+            const b = all.find((x) => (x.title || "").includes(clickTitle));
+            if (b) { b.click(); clearInterval(iv); }
+          }
+          if (hoverTitle) {
+            const b = all.find((x) => (x.title || "").includes(hoverTitle));
+            if (b) { b.parentElement.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true })); b.parentElement.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })); clearInterval(iv); }
+          }
+          if (++tries > 50) clearInterval(iv);
+        }, 60);
+      }
+      const mode = qp.get("mode") || "bypassPermissions";
+      const status = qp.get("status") || "idle";
+      const designMode = qp.get("designMode") || "design";
+      const tokens = { input: 18420, output: 5234, cacheRead: 120400, cacheCreation: 8200, total: 23654, costUsd: 0.34 };
+      const known = qp.get("noPct") !== "1";
+      const account = { authMethod: "Claude AI", email: "elyas.t@veliu.com", organization: "Veliu", plan: "Claude Team" };
+      const question = qp.get("q")
+        ? {
+            id: "q1",
+            questions: [
+              {
+                question: "Quale approccio preferisci per il redesign della hero?",
+                header: "Approccio",
+                multiSelect: false,
+                options: [
+                  { label: "Minimale", description: "Solo ritocchi a spaziature e tipografia, basso rischio." },
+                  { label: "Refactor", description: "Riorganizzo i componenti mantenendo i contenuti." },
+                  { label: "Riscrittura", description: "Ricostruisco la hero da zero seguendo il nuovo design Figma." },
+                ],
+              },
+            ],
+          }
+        : undefined;
+      window.__AGENT_CODE__ = {
+        view: "design",
+        media: "/dist/webview/media",
+        state: {
+          title: "Sistema il layout della homepage",
+          status: question ? "asking" : status,
+          mode,
+          designMode,
+          previewUrl: "http://localhost:3000",
+          usage: { percent: 23, resetsInLabel: "Reset tra 2h 45m", known, tokens, account,
+            windows: [
+              { type: "five_hour", label: "Sessione (5 ore)", percent: 23, resetsInLabel: "Reset tra 2h 45m", known, statusLabel: "Sotto i limiti" },
+              { type: "seven_day", label: "Settimanale", percent: 41, resetsInLabel: "Reset tra 4g 6h", known, statusLabel: "Sotto i limiti" },
+            ] },
+          settings: { model: "", thinking: true, effort: "high" },
+          pendingQuestion: question,
+          pendingPlan: qp.get("plan") === "1" ? { id: "pl1", plan: "## Piano\n\n1. Allineare la griglia della hero (CSS grid, gap 6)\n2. Bottoni full-width su mobile\n3. Aggiungere i test di layout\n\nProcedo?" } : undefined,
+          messages: [
+            { id: "u1", role: "user", text: "Sistema il layout della homepage seguendo questo riferimento",
+              attachments: [{ id: "f1", kind: "figma", name: "Figma · 697-2455", url: "https://figma.com/x?node-id=697-2455" }] },
+            {
+              id: "a1",
+              role: "assistant",
+              reasoning: "Leggo il componente, applico le modifiche al layout e lancio la build per verificare.",
+              text: "Ho aggiornato il layout della homepage allineando la griglia.",
+              streaming: status === "working",
+              tools: [
+                { id: "t1", name: "Read", summary: "src/pages/Home.tsx", state: "done" },
+                { id: "t2", name: "Edit", summary: "src/pages/Home.tsx", state: "done", diff: { file: "src/pages/Home.tsx", before: "<div className=\"hero\">\n  <h1>Veliu</h1>", after: "<div className=\"hero grid gap-6\">\n  <h1 className=\"text-5xl\">Veliu</h1>" } },
+                { id: "t3", name: "Bash", summary: "npm run build", state: status === "working" ? "running" : "done" },
+              ],
+            },
+          ],
+        },
+      };
+    </script>
+    <script type="module" src="/dist/webview/webview.js"></script>
+  </body>
+</html>

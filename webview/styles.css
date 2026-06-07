@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@theme {
+  --font-grotesk: "Host Grotesk", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  --font-dm: "DM Sans", "Host Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --color-ac-bg: #0e0e0e;
+  --color-ac-primary: #4067e8;
+  --color-ac-muted: #7f7f7f;
+  --color-ac-muted-2: #8f8f8f;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-ac-bg);
+  color: #ffffff;
+  font-family: var(--font-grotesk);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+/* Thin, dark scrollbars to match the design. */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+   Brand animations
+--------------------------------------------------------------------------- */
+@keyframes ac-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ac-slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ac-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes ac-pop {
+  0% { opacity: 0; transform: translateY(8px) scale(0.98); }
+  60% { transform: translateY(-1px) scale(1.005); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ac-gradient-pan {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes ac-shimmer {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+@keyframes ac-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes ac-pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(112, 255, 243, 0.35); }
+  70% { box-shadow: 0 0 0 9px rgba(112, 255, 243, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(112, 255, 243, 0); }
+}
+@keyframes ac-breathe {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+}
+
+.ac-fade-in { animation: ac-fade-in 0.35s ease both; }
+.ac-slide-up { animation: ac-slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ac-scale-in { animation: ac-scale-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ac-pop { animation: ac-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ac-float { animation: ac-float 5s ease-in-out infinite; }
+.ac-pulse-ring { animation: ac-pulse-ring 2s ease-out infinite; }
+.ac-breathe { animation: ac-breathe 3.2s ease-in-out infinite; }
+
+/* Staggered entrance for grids/lists. */
+.ac-stagger > * { animation: ac-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ac-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.ac-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.ac-stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.ac-stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.ac-stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.ac-stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.ac-stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.ac-stagger > *:nth-child(8) { animation-delay: 0.30s; }
+.ac-stagger > *:nth-child(9) { animation-delay: 0.34s; }
+
+/* Animated gradient text/border helper. */
+.ac-gradient-pan {
+  background-size: 200% 200%;
+  animation: ac-gradient-pan 4s linear infinite alternate;
+}
+
+/* Shimmer sweep (used on skeletons / working bars). */
+.ac-shimmer { position: relative; overflow: hidden; }
+.ac-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.12) 50%, transparent 100%);
+  transform: translateX(-120%);
+  animation: ac-shimmer 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+}

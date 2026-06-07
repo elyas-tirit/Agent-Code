@@ -1,0 +1,23 @@
+{
+  "nameShort": "Agent Code",
+  "nameLong": "Agent Code",
+  "applicationName": "agent-code",
+  "dataFolderName": ".agent-code-app",
+  "serverApplicationName": "agent-code-server",
+  "serverDataFolderName": ".agent-code-server",
+  "darwinBundleIdentifier": "com.veliu.agentcode",
+  "win32AppUserModelId": "Veliu.AgentCode",
+  "win32MutexName": "agentcode",
+  "win32DirName": "Agent Code",
+  "win32NameVersion": "Agent Code",
+  "win32RegValueName": "AgentCode",
+  "win32ShellNameShort": "Agent Code",
+  "urlProtocol": "agent-code",
+  "reportIssueUrl": "https://github.com/elyas-tirit/Agent-Code/issues",
+  "licenseUrl": "https://github.com/elyas-tirit/Agent-Code/blob/main/LICENSE",
+  "extensionsGallery": {
+    "serviceUrl": "https://open-vsx.org/vscode/gallery",
+    "itemUrl": "https://open-vsx.org/vscode/item"
+  },
+  "builtInExtensions": []
+}

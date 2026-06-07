@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="/dist/webview/webview.css" rel="stylesheet" />
+    <title>AC — Dashboard preview</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      const fakeSettings = { userName: "Elyas", defaultMode: "bypassPermissions", model: "", effort: "high", thinking: true, fullAccess: true, previewUrl: "http://localhost:3000", openDashboardOnStartup: true };
+      window.acquireVsCodeApi = () => ({
+        postMessage(m) {
+          if (m && m.type === "settings/get") {
+            setTimeout(() => window.dispatchEvent(new MessageEvent("message", { data: { type: "settings/values", settings: fakeSettings } })), 30);
+          }
+        },
+        getState() {}, setState() {},
+      });
+      const params = new URLSearchParams(location.search);
+      const openModal = params.get("open");
+      if (openModal) {
+        const needle = openModal === "settings" ? "Impostazioni" : "Uso totale";
+        let tries = 0;
+        const iv = setInterval(() => {
+          const btn = [...document.querySelectorAll("button")].find((b) => (b.title || "").includes(needle));
+          if (btn) { btn.click(); clearInterval(iv); }
+          if (++tries > 40) clearInterval(iv);
+        }, 60);
+      }
+      const tokens = { input: 18420, output: 5234, cacheRead: 120400, cacheCreation: 8200, total: 23654, costUsd: 0.34 };
+      const idle = (id, name) => ({
+        id, name, status: "idle", statusLabel: "In attesa di ordini", accent: "blue", tokens,
+        actions: [{ id: "apri", label: "Nuovi ordini", kind: "primary" }, { id: "fire-agent", label: "Fire Agent", kind: "secondary" }],
+      });
+      const approval = (id, name) => ({
+        id, name, status: "awaiting-approval", statusLabel: "Human Request", accent: "yellow", tokens,
+        actions: [{ id: "controlla", label: "Controlla", kind: "primary" }, { id: "autonomo", label: "Autonomo", kind: "secondary" }],
+      });
+      const asking = (id, name) => ({
+        id, name, status: "asking", statusLabel: "Human Request", accent: "yellow", tokens,
+        actions: [{ id: "controlla", label: "Controlla", kind: "primary" }, { id: "autonomo", label: "Autonomo", kind: "secondary" }],
+      });
+      const working = (id, name, desc) => ({
+        id, name, status: "working", statusLabel: "Sta lavorando", accent: "neutral", tokens,
+        description: desc, actions: [],
+      });
+      window.__AGENT_CODE__ = {
+        view: "dashboard",
+        media: "/dist/webview/media",
+        state: {
+          greeting: "Buongiorno, Elyas",
+          usage: { percent: 23, resetsInLabel: "Reset tra 2h 40m", known: true, tokens,
+            windows: [
+              { type: "five_hour", label: "Sessione (5 ore)", percent: 23, resetsInLabel: "Reset tra 2h 40m", known: true },
+              { type: "seven_day", label: "Settimanale", percent: 41, resetsInLabel: "Reset tra 4g 6h", known: true },
+            ] },
+          agents: [
+            approval("2", "Sistema il layout della homepage"),
+            asking("4", "Refactor del modulo di autenticazione"),
+            idle("1", "Scraping agent"),
+            working("3", "Aggiungi la validazione al form di checkout", "Sto tirando giù ancora la prima parte di informazioni che ci servono per popolare il db…"),
+            working("5", "Genera i test per il carrello", "Eseguo la suite di test e verifico la copertura sui casi limite…"),
+            working("6", "Ottimizza le query del database", "Analizzo il piano di esecuzione e aggiungo gli indici mancanti…"),
+          ],
+        },
+      };
+    </script>
+    <script type="module" src="/dist/webview/webview.js"></script>
+  </body>
+</html>
