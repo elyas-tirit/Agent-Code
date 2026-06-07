@@ -37,7 +37,8 @@ npm run build          # webview + extension
 # poi F5 in VS Code → Extension Development Host
 npm run watch          # sviluppo (rebuild esbuild + vite)
 npm run typecheck      # tsc x2 (ext + webview)
-npm run package        # → agent-code.vsix (installazione stabile; include l'SDK; ~110MB)
+npm test               # 21 test (PreviewProxy, transcript, JsonFileStore) via node --test
+npm run package        # → agent-code.vsix (installazione stabile; include l'SDK; ~70MB)
 ```
 - **F5** apre la dashboard. Comandi (⇧⌘P): `Agent Code: Open Agents Dashboard / Open Design Workspace / New Agent / Immersive Mode` (⌘⌥I = Zen full-screen, ponte verso il fork).
 - **Verifica visiva headless** (no F5): `python3 -m http.server 8099` poi Chrome `--headless --screenshot` su `preview/dashboard.html` o `preview/design.html` (supportano query `?mode= &status= &designMode= &noPct=1 &q=1 &plan=1`).
@@ -64,7 +65,9 @@ Settings (`agentCode.*`): `openDashboardOnStartup, backend, claudePath, userName
 - `media/picker.js` — element picker stile Cursor (iniettato nell'iframe dal proxy; hover stroke + componente React + sorgente file:line completa). Risponde a `ac-ping` per riconfermare il ready dopo ogni load.
 - `src/preview/PreviewProxy.ts` — reverse proxy locale (no-deps) che rende il picker cross-origin out-of-the-box: forward al dev server, injection HTML, proxy WebSocket, strip header di framing/CSP, retarget a caldo. Avviato/disposto da `DesignWorkspacePanel`.
 - `fork/` — Fase 3: `setup-fork.sh` (clone+branding+embed+chrome), `product.overlay.json` (branding + `configurationDefaults` full-bleed), `apply-chrome.mjs` (injector idempotente ancorato della titlebar greeting+Session), README.
+- `src/persistence.ts` — `JsonFileStore` (read sync, write async atomico coalesced, `flushSync`); usato da `extension.ts` per salvare gli agenti su file.
 - `scripts/usage-probe.mjs` — diagnostica usage reale dell'SDK.
+- `scripts/test.mjs` + `tests/*.test.mjs` — `npm test`: bundla i moduli puri con esbuild in `.test-build/` e lancia `node --test --test-force-exit`.
 
 ## Cosa è FATTO ✅
 
@@ -73,7 +76,7 @@ Settings (`agentCode.*`): `openDashboardOnStartup, backend, claudePath, userName
 - Preview/Design/Code: preview live + **select component stile Cursor**, device picker (2 stati + preset), fullscreen reale, settings preview, **Code view** (alberatura + viewer), splitter trascinabile, Preview mode = full-screen.
 - **Usage reale**: token+costo di sessione + finestre 5h/settimanale + account (`accountInfo`) nel badge e nel UsageModal.
 - **Notifiche OS** quando un agente serve attenzione (a finestra non a fuoco).
-- **Persistenza**: agenti+conversazioni in `globalState` ("agentCode.agents"); riaprendo vedi la cronologia; al primo nuovo messaggio la sessione **riprende** (`resume` SDK) con contesto pieno. Reload-safe (serializer dashboard).
+- **Persistenza**: agenti+conversazioni su **file** (`globalStorage/agents.json` via `JsonFileStore`, scrittura atomica + `flushSync` a shutdown; migra in automatico dal vecchio `globalState`); riaprendo vedi la cronologia; al primo nuovo messaggio la sessione **riprende** (`resume` SDK) con contesto pieno. Reload-safe (serializer dashboard).
 - `.vsix` pacchettizzabile, LICENSE (MIT).
 
 ## Limiti noti / COSA MANCA ❗ (vedi anche "Next step")
@@ -84,7 +87,7 @@ Settings (`agentCode.*`): `openDashboardOnStartup, backend, claudePath, userName
 4. **Code view** = viewer read-only, non editor né refresh live legato alle modifiche dell'agente.
 5. **Figma MCP**: cablato (SSE `127.0.0.1:3845`), richiede "Dev Mode MCP server" attivo in Figma; round-trip non verificato dal vivo.
 6. **Edge minori**: aprire un agente *live* nell'esatto ms in cui streamma può perdere qualche delta (recuperato al reopen); `setMode` su agente dormiente risveglia un processo.
-7. **Hardening**: zero test automatici; `globalState` può gonfiarsi con conversazioni lunghe (valutare file in `globalStorage`); onboarding/primo avvio cade in mock silenziosamente se manca SDK/login.
+7. **Hardening**: ✅ affrontato. (a) Persistenza spostata su **file** (`globalStorage/agents.json`, scrittura atomica tmp+rename, `flushSync` allo shutdown, migrazione one-time dal vecchio `globalState`). (b) Stato backend **segnalato**: status bar persistente + warning azionabile quando si cade in mock pur volendo Claude reale (niente più fallback silenzioso). (c) **Test minimi**: `npm test` (21 test su PreviewProxy, transcript reducer, JsonFileStore; runner in `scripts/test.mjs`, file in `tests/`). Resta scoperto il grosso della UI webview (test E2E).
 8. **Cosmetico**: committato in locale ma **non ancora pushato** (push bloccato dietro conferma di Elyas). Icona estensione aggiunta (`media/icon.png` 256×256, robot brandizzato); video compresso 22MB→1.8MB (720p/24fps/crf30, è uno sfondo al 6%). Il vsix è ~70MB (dominato dall'SDK in `node_modules`, inevitabile).
 9. **Tab agente non riaperti** al reload (solo la dashboard; li riapri da lì).
 

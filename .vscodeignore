@@ -4,6 +4,8 @@ webview/**
 scripts/**
 fork/**
 preview/**
+tests/**
+.test-build/**
 *.ts
 *.tsx
 tsconfig*.json

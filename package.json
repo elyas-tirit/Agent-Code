@@ -123,6 +123,7 @@
     "watch:webview": "vite build --watch",
     "watch": "npm-run-all -p watch:ext watch:webview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.webview.json",
+    "test": "node scripts/test.mjs",
     "package": "npm run build && vsce package -o agent-code.vsix"
   },
   "devDependencies": {

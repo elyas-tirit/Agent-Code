@@ -1,13 +1,16 @@
 import * as vscode from "vscode";
 import * as fs from "node:fs";
 import * as os from "node:os";
+import * as path from "node:path";
 import { AgentManager, BackendChoice, PersistedAgent } from "./agents/AgentManager";
 import type { EffortLevel, PermissionMode } from "./shared/protocol";
 import { AgentsDashboardPanel } from "./panels/AgentsDashboardPanel";
 import { DesignWorkspacePanel } from "./panels/DesignWorkspacePanel";
+import { JsonFileStore } from "./persistence";
 
 let manager: AgentManager | undefined;
 let managerPromise: Promise<AgentManager> | undefined;
+let store: JsonFileStore<PersistedAgent[]> | undefined;
 
 function resolveClaudePath(configured: string): string | undefined {
   if (configured && fs.existsSync(configured)) return configured;
@@ -57,9 +60,19 @@ async function buildManager(context: vscode.ExtensionContext): Promise<AgentMana
     figmaMcpUrl: cfg.get<string>("figmaMcpUrl", "http://127.0.0.1:3845/sse") || undefined,
   });
 
-  // Persist agents + transcripts so they survive reloads/restarts.
-  manager.onPersist((agents) => void context.globalState.update("agentCode.agents", agents));
-  const saved = context.globalState.get<PersistedAgent[]>("agentCode.agents", []);
+  // Persist agents + transcripts to a file in globalStorage (long transcripts
+  // would bloat globalState, which re-serializes its whole blob on every write).
+  store = new JsonFileStore<PersistedAgent[]>(
+    path.join(context.globalStorageUri.fsPath, "agents.json"),
+  );
+  // One-time migration of any data from the previous globalState location.
+  const legacy = context.globalState.get<PersistedAgent[]>("agentCode.agents");
+  if (legacy && legacy.length && !store.exists()) {
+    await store.write(legacy);
+    await context.globalState.update("agentCode.agents", undefined);
+  }
+  manager.onPersist((agents) => void store!.write(agents));
+  const saved = store.read([]);
   if (saved.length) manager.restore(saved);
 
   // OS notification when an agent needs you — only when the window is NOT
@@ -89,13 +102,56 @@ async function buildManager(context: vscode.ExtensionContext): Promise<AgentMana
 
   if (saved.length === 0 && manager.backend.id === "mock") {
     await manager.seedDemo();
-  } else if (manager.backend.id !== "mock") {
-    vscode.window.setStatusBarMessage(
-      "Agent Code: agenti Claude reali attivi (login del tuo abbonamento).",
-      4000,
+  }
+  surfaceBackendStatus(context, manager, choice, claudePath);
+  return manager;
+}
+
+/**
+ * Make the backend state visible instead of silently falling into mock. Shows a
+ * persistent status-bar item and — when the user wanted real Claude but we fell
+ * back to the simulated backend — an actionable warning.
+ */
+function surfaceBackendStatus(
+  context: vscode.ExtensionContext,
+  mgr: AgentManager,
+  choice: BackendChoice,
+  claudePath: string | undefined,
+): void {
+  const real = mgr.backend.id !== "mock";
+  const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  if (real) {
+    item.text = "$(sparkle) Agent Code";
+    item.tooltip = "Agenti Claude reali attivi (login del tuo abbonamento Claude).";
+  } else {
+    item.text = "$(warning) Agent Code: simulato";
+    item.tooltip =
+      "Claude Code non disponibile — agenti simulati (mock). Clicca per le impostazioni.";
+  }
+  item.command = { title: "Impostazioni", command: "workbench.action.openSettings", arguments: ["agentCode"] };
+  item.show();
+  context.subscriptions.push(item);
+
+  if (!real && choice !== "mock") {
+    void vscode.window
+      .showWarningMessage(
+        "Agent Code sta usando agenti simulati (mock): Claude Code non è disponibile (SDK non caricato o login mancante). Le risposte sono finte finché non lo attivi.",
+        "Come attivarlo",
+        "Impostazioni",
+      )
+      .then((sel) => {
+        if (sel === "Impostazioni") {
+          void vscode.commands.executeCommand("workbench.action.openSettings", "agentCode");
+        } else if (sel === "Come attivarlo") {
+          void vscode.env.openExternal(vscode.Uri.parse("https://docs.claude.com/claude-code"));
+        }
+      });
+  } else if (real && !claudePath) {
+    // SDK loaded but no `claude` CLI found on disk → agents may fail until login.
+    void vscode.window.showInformationMessage(
+      "Agent Code: SDK pronto, ma non ho trovato il CLI `claude`. Se gli agenti falliscono, esegui il login a Claude Code (o imposta `agentCode.claudePath`).",
     );
   }
-  return manager;
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -139,7 +195,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 export function deactivate(): void {
-  manager?.flush(); // persist any debounced changes before shutdown
+  manager?.flush(); // push the latest snapshot into the store…
+  store?.flushSync(); // …and write it to disk synchronously before we exit
   manager = undefined;
   managerPromise = undefined;
+  store = undefined;
 }
