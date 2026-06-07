@@ -45,23 +45,30 @@ DEST="$BASE/extensions/agent-code"
 rm -rf "$DEST" && mkdir -p "$DEST"
 ( cd "$DEST" && unzip -q "$VSIX" && mv extension/* . 2>/dev/null && rm -rf extension "[Content_Types].xml" extension.vsixmanifest 2>/dev/null || true )
 
-# 5) Seed default settings for the full-bleed feel.
-echo "▸ Seeding default settings…"
-mkdir -p "$BASE/src/vs/workbench/contrib/agentcode"
-cp "$ROOT/fork/default-settings.json" "$BASE/src/vs/workbench/contrib/agentcode/default-settings.json"
+# 5) Apply the custom chrome patch (title-bar greeting + Session pill).
+#    The full-bleed defaults (hidden rail, no status bar, dashboard landing) are
+#    baked into product.json via product.overlay.json → "configurationDefaults"
+#    in step 3 — no source patch needed for those. The ONE genuine source patch
+#    is the title-bar chrome, applied here idempotently.
+echo "▸ Applying custom chrome (title-bar greeting + Session pill)…"
+node "$ROOT/fork/apply-chrome.mjs" "$BASE"
 
 cat <<EOF
 
 ✅ Scaffold ready in: $BASE
 
-Next (on your machine):
+Next (on your machine — this is the heavy part):
   cd "$BASE"
-  npm install          # or: yarn
+  npm install          # or: yarn   (VS Code's deps are multi-GB, several minutes)
   ./scripts/code.sh    # run the dev build (macOS/Linux); scripts\\code.bat on Windows
 
-Branding is applied and the extension is bundled. For the custom chrome
-(greeting bar / Session badge in the title bar), patch:
-  src/vs/workbench/browser/parts/titlebar/titlebarPart.ts   (title area)
-  src/vs/workbench/browser/parts/activitybar/                (hide/replace rail)
-See fork/README.md for details. Rebase on upstream tags periodically for security fixes.
+What the scaffold already did for you:
+  • Branding fused into product.json (name, ids, agent-code:// protocol, Open VSX).
+  • Full-bleed defaults baked in via product.configurationDefaults (rail hidden,
+    no status bar, custom title bar, dashboard as the landing surface).
+  • The extension bundled as a built-in (no install step inside the app).
+  • The title-bar chrome patch applied to titlebarPart.ts (idempotent — safe to
+    re-run after a rebase; re-run with: node fork/apply-chrome.mjs "$BASE").
+
+Rebase on upstream tags periodically for security fixes (bump VSCODE_TAG, re-run).
 EOF

@@ -20,6 +20,10 @@ function resolveClaudePath(configured: string): string | undefined {
   return candidates.find((p) => fs.existsSync(p));
 }
 
+function formatTokens(total: number): string {
+  return total >= 1000 ? `${(total / 1000).toFixed(1)}k` : `${total}`;
+}
+
 function resolveUserName(configured: string): string {
   if (configured.trim()) return configured.trim();
   const raw = os.userInfo().username || "";
@@ -65,6 +69,22 @@ async function buildManager(context: vscode.ExtensionContext): Promise<AgentMana
     void vscode.window.showWarningMessage(`${name} — ${message}`, "Apri").then((sel) => {
       if (sel === "Apri" && manager) DesignWorkspacePanel.createOrShow(context, manager, agentId);
     });
+  });
+
+  // Feed the Phase-3 fork's title-bar "Session" pill with live usage. Best-effort
+  // and de-duped: the `agentCode.titlebarStatus` command only exists in the fork,
+  // so in plain VS Code this rejects and we swallow it (no pill, no harm).
+  let lastTitlebar = "";
+  manager.onDidChange((state) => {
+    const u = state.usage;
+    const label = u.known
+      ? `Session ${Math.round(u.percent)}%`
+      : u.tokens && u.tokens.total > 0
+        ? `${formatTokens(u.tokens.total)} token`
+        : "";
+    if (label === lastTitlebar) return;
+    lastTitlebar = label;
+    void vscode.commands.executeCommand("agentCode.titlebarStatus", label).then(undefined, () => {});
   });
 
   if (saved.length === 0 && manager.backend.id === "mock") {

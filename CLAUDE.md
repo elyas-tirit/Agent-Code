@@ -62,7 +62,7 @@ Settings (`agentCode.*`): `openDashboardOnStartup, backend, claudePath, userName
 - `src/extension.ts` — attivazione, comandi, `getManager` (memoizza la **promise**), restore da `globalState`, notifiche OS (solo a finestra non a fuoco), serializer (riapre la dashboard al reload), `deactivate` flush.
 - `webview/` — `App.tsx`, `vscode.ts` (post/onHostMessage/mediaUrl/bootstrap), `ui/{Icon,Avatar,Pill,Modal,SettingsModal,UsageModal}`, `views/dashboard/{AgentsDashboard,AgentCard,NewAgentCard,TopBar}`, `views/design/{DesignWorkspace,PreviewCanvas,ChatPanel,Composer,ApprovalModal,QuestionModal,PlanModal,CodeView}`.
 - `media/picker.js` — element picker stile Cursor (iniettato nell'iframe; hover stroke + componente React + sorgente).
-- `fork/` — scaffolding Fase 3 (branding, default immersivi, `setup-fork.sh`, README con i file della chrome da patchare).
+- `fork/` — Fase 3: `setup-fork.sh` (clone+branding+embed+chrome), `product.overlay.json` (branding + `configurationDefaults` full-bleed), `apply-chrome.mjs` (injector idempotente ancorato della titlebar greeting+Session), README.
 - `scripts/usage-probe.mjs` — diagnostica usage reale dell'SDK.
 
 ## Cosa è FATTO ✅
@@ -77,7 +77,7 @@ Settings (`agentCode.*`): `openDashboardOnStartup, backend, claudePath, userName
 
 ## Limiti noti / COSA MANCA ❗ (vedi anche "Next step")
 
-1. **Fase 3 fork**: solo scaffoldato in `fork/`, **non compilato**; le patch della chrome (greeting/Session in titlebar, landing Agenti) sono **documentate, non scritte**. → è ciò che separa "estensione" da "app full-bleed tipo Cursor".
+1. **Fase 3 fork**: scaffold + branding + **patch della chrome scritta e auto-applicata** (`fork/apply-chrome.mjs` inietta greeting+Session in `titlebarPart.ts`; rail/landing/status = `configurationDefaults` in `product.json`, niente patch al sorgente). L'injector è **verificato sul sorgente reale VS Code 1.96.0** (ancorato + idempotente) ma **non ancora compilato dentro VS Code**: resta da fare in locale il clone multi-GB + `npm install` pesante + `./scripts/code.sh`. È la parte che separa "estensione" da "app full-bleed tipo Cursor".
 2. **Select cross-origin**: il picker funziona same-origin o con `media/picker.js` aggiunto all'app; su `localhost` out-of-the-box no (limite browser). Mapping `file:line` solo via fiber `_debugSource` (dev-only).
 3. **Usage %**: l'SDK **non espone `utilization`** per account Team (solo token+stato+reset). Il % del plugin Claude verrebbe da un endpoint claude.ai non documentato.
 4. **Code view** = viewer read-only, non editor né refresh live legato alle modifiche dell'agente.

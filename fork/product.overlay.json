@@ -19,5 +19,18 @@
     "serviceUrl": "https://open-vsx.org/vscode/gallery",
     "itemUrl": "https://open-vsx.org/vscode/item"
   },
-  "builtInExtensions": []
+  "builtInExtensions": [],
+  "configurationDefaults": {
+    "//": "Baked-in default settings for the full-bleed feel. VS Code reads product.configurationDefaults natively — no source patch needed. Users can still override any of these.",
+    "agentCode.openDashboardOnStartup": true,
+    "workbench.activityBar.location": "hidden",
+    "workbench.statusBar.visible": false,
+    "workbench.editor.showTabs": "single",
+    "workbench.startupEditor": "none",
+    "window.titleBarStyle": "custom",
+    "window.commandCenter": false,
+    "workbench.layoutControl.enabled": false,
+    "workbench.colorTheme": "Default Dark Modern",
+    "editor.minimap.enabled": false
+  }
 }
