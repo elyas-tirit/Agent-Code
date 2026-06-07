@@ -84,7 +84,7 @@ Settings (`agentCode.*`): `openDashboardOnStartup, backend, claudePath, userName
 5. **Figma MCP**: cablato (SSE `127.0.0.1:3845`), richiede "Dev Mode MCP server" attivo in Figma; round-trip non verificato dal vivo.
 6. **Edge minori**: aprire un agente *live* nell'esatto ms in cui streamma può perdere qualche delta (recuperato al reopen); `setMode` su agente dormiente risveglia un processo.
 7. **Hardening**: zero test automatici; `globalState` può gonfiarsi con conversazioni lunghe (valutare file in `globalStorage`); onboarding/primo avvio cade in mock silenziosamente se manca SDK/login.
-8. **Cosmetico**: non committato/pushato; niente icona estensione; video 22MB da comprimere.
+8. **Cosmetico**: committato in locale ma **non ancora pushato** (push bloccato dietro conferma di Elyas). Icona estensione aggiunta (`media/icon.png` 256×256, robot brandizzato); video compresso 22MB→1.8MB (720p/24fps/crf30, è uno sfondo al 6%). Il vsix è ~70MB (dominato dall'SDK in `node_modules`, inevitabile).
 9. **Tab agente non riaperti** al reload (solo la dashboard; li riapri da lì).
 
 ## Next step (ordine consigliato)

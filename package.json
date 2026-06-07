@@ -5,6 +5,7 @@
   "version": "0.0.1",
   "publisher": "veliu",
   "license": "MIT",
+  "icon": "media/icon.png",
   "private": false,
   "repository": {
     "type": "git",
