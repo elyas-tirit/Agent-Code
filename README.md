@@ -5,11 +5,6 @@ Una "mod" di VS Code pensata per designer: una **dashboard multi-agente** e un
 estensione VS Code + UI in webview. Mantiene tutte le funzioni di VS Code perché
 ci vive dentro.
 
-Realizza i due frame Figma (file *Veliu-APP*):
-
-- **Agenti** — griglia di sessioni agent come card (stato, ETA, azioni).
-- **Design** — preview live del dev server + chat con l'agente + selezione componenti.
-
 ## Stack
 
 - **Extension host**: TypeScript, bundle con esbuild → `dist/extension.js`
