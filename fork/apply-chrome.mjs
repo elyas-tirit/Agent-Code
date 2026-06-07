@@ -83,7 +83,12 @@ const INJECTED = `\tprivate agentCodeSessionEl?: HTMLElement;
 	 * until then — so this is a harmless no-op in a vanilla VS Code build.
 	 */
 	private installAgentCodeChrome(): void {
-		const host = append(this.leftContent, $('div.agentcode-chrome'));
+		// Sit at the visual far-left: before the menu bar on Windows/Linux (where a
+		// menubar exists in leftContent), otherwise prepend (macOS has neither
+		// appicon nor menubar there).
+		const host = this.menubar
+			? this.leftContent.insertBefore($('div.agentcode-chrome'), this.menubar)
+			: prepend(this.leftContent, $('div.agentcode-chrome'));
 		host.style.display = 'flex';
 		host.style.alignItems = 'center';
 		host.style.gap = '8px';

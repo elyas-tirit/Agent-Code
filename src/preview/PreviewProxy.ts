@@ -59,6 +59,9 @@ export class PreviewProxy {
   dispose(): void {
     try {
       this.server.close();
+      // close() leaves upgraded (WebSocket/HMR) and in-flight sockets alive;
+      // forcibly destroy them so a closed Design panel leaks nothing.
+      this.server.closeAllConnections?.();
     } catch {
       /* already closed */
     }
@@ -94,8 +97,10 @@ export class PreviewProxy {
         if (typeof loc === "string") out["location"] = this.rewriteLocation(loc);
 
         const ct = String(proxyRes.headers["content-type"] || "");
+        // HEAD (and other bodyless replies) must not be buffered/injected — we'd
+        // fabricate a wrong content-length for a response that carries no body.
         const injectable =
-          ct.includes("text/html") && !proxyRes.headers["content-encoding"];
+          req.method !== "HEAD" && ct.includes("text/html") && !proxyRes.headers["content-encoding"];
 
         if (injectable) {
           // We buffer + resend with our own content-length, so any chunked
@@ -110,7 +115,11 @@ export class PreviewProxy {
             res.writeHead(proxyRes.statusCode || 200, out);
             res.end(body);
           });
-          proxyRes.on("error", () => res.end());
+          // Upstream dropped mid-response: surface a 502 rather than an implicit 200.
+          proxyRes.on("error", () => {
+            if (!res.headersSent) res.writeHead(502, { "content-type": "text/html; charset=utf-8" });
+            res.end();
+          });
         } else {
           res.writeHead(proxyRes.statusCode || 200, out);
           proxyRes.pipe(res);
@@ -163,6 +172,20 @@ export class PreviewProxy {
       clientSocket.pipe(proxySocket);
       proxySocket.on("error", () => clientSocket.destroy());
       clientSocket.on("error", () => proxySocket.destroy());
+    });
+    // If the upstream answers the Upgrade with an ordinary HTTP response (HMR off,
+    // dev server mid-restart, plain server), Node fires 'response' — not 'upgrade'.
+    // Relay it and close, otherwise the client WS hangs and the socket leaks.
+    proxyReq.on("response", (proxyRes) => {
+      try {
+        clientSocket.write(
+          `HTTP/1.1 ${proxyRes.statusCode || 502} ${proxyRes.statusMessage || ""}\r\nConnection: close\r\n\r\n`,
+        );
+      } catch {
+        /* client already gone */
+      }
+      proxyRes.resume();
+      clientSocket.destroy();
     });
     proxyReq.on("error", () => clientSocket.destroy());
 

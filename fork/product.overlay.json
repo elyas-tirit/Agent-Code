@@ -19,7 +19,6 @@
     "serviceUrl": "https://open-vsx.org/vscode/gallery",
     "itemUrl": "https://open-vsx.org/vscode/item"
   },
-  "builtInExtensions": [],
   "configurationDefaults": {
     "//": "Baked-in default settings for the full-bleed feel. VS Code reads product.configurationDefaults natively — no source patch needed. Users can still override any of these.",
     "agentCode.openDashboardOnStartup": true,

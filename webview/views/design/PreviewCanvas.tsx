@@ -189,7 +189,9 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
   };
 
   const refresh = () => {
-    if (iframeRef.current) iframeRef.current.src = url;
+    // Reload through the proxy (iframeSrc), not the raw url — otherwise the
+    // picker injection is lost and React re-navigates back to the proxy (flash).
+    if (iframeRef.current) iframeRef.current.src = iframeSrc;
   };
 
   // Two-state toggle: desktop ↔ the chosen device (default iPad). The hover

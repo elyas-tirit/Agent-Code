@@ -43,7 +43,10 @@ console.log("  product.json updated");
 echo "▸ Bundling the extension as built-in…"
 DEST="$BASE/extensions/agent-code"
 rm -rf "$DEST" && mkdir -p "$DEST"
-( cd "$DEST" && unzip -q "$VSIX" && mv extension/* . 2>/dev/null && rm -rf extension "[Content_Types].xml" extension.vsixmanifest 2>/dev/null || true )
+( cd "$DEST" && unzip -q "$VSIX" )           # let a bad/partial VSIX abort (set -e)
+mv "$DEST/extension/"* "$DEST/" 2>/dev/null || true
+rm -rf "$DEST/extension" "$DEST/[Content_Types].xml" "$DEST/extension.vsixmanifest" 2>/dev/null || true
+[ -f "$DEST/package.json" ] || { echo "✗ VSIX unpack failed: package.json missing in $DEST" >&2; exit 1; }
 
 # 5) Apply the custom chrome patch (title-bar greeting + Session pill).
 #    The full-bleed defaults (hidden rail, no status bar, dashboard landing) are

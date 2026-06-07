@@ -44,6 +44,11 @@ export class JsonFileStore<T> {
         this.queued = false;
         await this.writeOnce(this.last);
       }
+    } catch (err) {
+      // Surface instead of failing silently (and avoid an unhandled rejection on
+      // the discarded promise). The atomic temp→rename leaves the previous file
+      // intact, so the worst case is a dropped update, not a corrupt one.
+      console.error("[AgentCode] persistence write failed:", err);
     } finally {
       this.inFlight = false;
     }

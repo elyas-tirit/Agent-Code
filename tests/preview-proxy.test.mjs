@@ -190,6 +190,39 @@ test("proxies a WebSocket upgrade end-to-end (echo)", async () => {
   }
 });
 
+test("does not hang the client when an upgrade gets a non-101 reply", async () => {
+  // Upstream answers the Upgrade request with an ordinary HTTP response (HMR off /
+  // mid-restart). The proxy must relay + close, not leak a hung client socket.
+  const target = http.createServer((req, res) => res.end("ok"));
+  target.on("upgrade", (req, socket) => {
+    socket.write("HTTP/1.1 426 Upgrade Required\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+    socket.end();
+  });
+  const url = await listen(target);
+  const proxy = new PreviewProxy(PICKER);
+  const base = await proxy.start(url);
+  try {
+    const closed = await new Promise((resolve) => {
+      const u = new URL(base);
+      const sock = net.connect(Number(u.port), u.hostname, () => {
+        sock.write(
+          "GET /socket HTTP/1.1\r\nHost: " + u.host + "\r\nUpgrade: websocket\r\n" +
+            "Connection: Upgrade\r\nSec-WebSocket-Key: x\r\nSec-WebSocket-Version: 13\r\n\r\n",
+        );
+      });
+      let got = false;
+      sock.on("data", () => (got = true));
+      sock.on("close", () => resolve({ got, closed: true }));
+      sock.on("error", () => resolve({ got, closed: true }));
+      setTimeout(() => { sock.destroy(); resolve({ got, closed: false }); }, 1200); // hang → fail
+    });
+    assert.equal(closed.closed, true, "client socket should be closed, not left hanging");
+  } finally {
+    proxy.dispose();
+    target.close();
+  }
+});
+
 test("returns a friendly 502 when the dev server is down", async () => {
   const proxy = new PreviewProxy(PICKER);
   const base = await proxy.start("http://127.0.0.1:1");
