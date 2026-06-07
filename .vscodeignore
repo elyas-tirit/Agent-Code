@@ -17,3 +17,7 @@ media/**
 **/*.map
 !dist/**
 !media/icon.png
+INSTALL.md
+*.vsix
+*.zip
+.share/**
