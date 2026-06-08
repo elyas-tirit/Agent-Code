@@ -91,6 +91,59 @@
         },
       };
     </script>
+    <script>
+      // Code-view mock: feed a tree + a sample open file so the IDE renders headless.
+      if (new URLSearchParams(location.search).get("designMode") === "code") {
+        const tree = [
+          { name: "node_modules", path: "node_modules", type: "dir", children: [] },
+          { name: "public", path: "public", type: "dir", children: [] },
+          { name: "src", path: "src", type: "dir", children: [
+            { name: "assets", path: "src/assets", type: "dir", children: [] },
+            { name: "styles", path: "src/styles", type: "dir", children: [ { name: "global.css", path: "src/styles/global.css", type: "file" } ] },
+            { name: "components", path: "src/components", type: "dir", children: [
+              { name: "header.tsx", path: "src/components/header.tsx", type: "file" },
+              { name: "banner.tsx", path: "src/components/banner.tsx", type: "file" },
+              { name: "footer.tsx", path: "src/components/footer.tsx", type: "file" },
+            ] },
+            { name: "product.js", path: "src/product.js", type: "file" },
+            { name: "router.tsx", path: "src/router.tsx", type: "file" },
+          ] },
+          { name: "index.html", path: "index.html", type: "file" },
+        ];
+        const content = [
+          'import React from "react";',
+          'import { useState, useEffect } from "react";',
+          'import { Button } from "@/components/ui/button";',
+          'import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";',
+          'import bannerImg from "../assets/savanna-hero-banner-image.png";',
+          '',
+          'const slides = [',
+          '  {',
+          '    id: 1,',
+          '    image: bannerImg,',
+          '    title: "AT TAXFARM. WE TURN YOUR CRYPTO TAXES INTO ACTUAL FARMLAND",',
+          '    subtitle: "Every $FARM token you hold buys real land and grows real food.",',
+          '    buttonText: "Shop now",',
+          '  },',
+          '];',
+          '',
+          'export function Banner() {',
+          '  const [index, setIndex] = useState(0);',
+          '  useEffect(() => {',
+          '    const t = setInterval(() => setIndex((i) => (i + 1) % slides.length), 5000);',
+          '    return () => clearInterval(t);',
+          '  }, []);',
+          '  return <div className="banner">{slides[index].title}</div>;',
+          '}',
+        ].join("\n");
+        let n = 0;
+        const iv = setInterval(() => {
+          window.postMessage({ type: "code/tree", nodes: tree }, "*");
+          window.postMessage({ type: "code/file", path: "src/components/banner.tsx", content, language: "tsx" }, "*");
+          if (++n > 6) clearInterval(iv);
+        }, 180);
+      }
+    </script>
     <script type="module" src="/dist/webview/webview.js"></script>
   </body>
 </html>

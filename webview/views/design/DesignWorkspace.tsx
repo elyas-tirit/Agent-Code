@@ -18,6 +18,7 @@ import { SettingsModal } from "../../ui/SettingsModal";
 import { PreviewCanvas } from "./PreviewCanvas";
 import { CodeView } from "./CodeView";
 import { ChatPanel } from "./ChatPanel";
+import { ComponentPromptModal } from "./ComponentPromptModal";
 import { ApprovalModal } from "./ApprovalModal";
 import { QuestionModal } from "./QuestionModal";
 import { PlanModal } from "./PlanModal";
@@ -63,11 +64,13 @@ function SegmentedControl({ mode, onChange }: { mode: DesignMode; onChange: (m: 
             key={m}
             onClick={() => onChange(m)}
             className={`rounded-full px-5 py-1.5 text-[14px] font-medium transition-all ${
-              active ? "text-white" : "font-light text-white/60 hover:text-white"
+              active ? (m === "code" ? "text-black" : "text-white") : "font-light text-white/60 hover:text-white"
             }`}
             style={
               active
-                ? { background: "linear-gradient(90deg,#70fff3 0%,#4067e8 100%)", boxShadow: "0 0 18px -4px #4cc4ff" }
+                ? m === "code"
+                  ? { background: "linear-gradient(90deg,#7ee787 0%,#3fb950 100%)", boxShadow: "0 0 18px -4px #3fb950" }
+                  : { background: "linear-gradient(90deg,#70fff3 0%,#4067e8 100%)", boxShadow: "0 0 18px -4px #4cc4ff" }
                 : undefined
             }
           >
@@ -90,6 +93,7 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [previewCollapsed, setPreviewCollapsed] = useState(false);
   const [minimized, setMinimized] = useState<Set<string>>(new Set());
+  const [compModal, setCompModal] = useState(false);
   const [chatWidth, setChatWidth] = useState(420);
   const mini = (id: string) => setMinimized((s) => new Set(s).add(id));
   const unmini = (id: string) =>
@@ -221,7 +225,12 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
   const collapsed = state.designMode === "design" && previewCollapsed;
   const left =
     state.designMode === "code" ? (
-      <CodeView />
+      <CodeView
+        onSelectCode={(ref) => {
+          setSelected(ref);
+          post({ type: "design/selectComponent", component: ref });
+        }}
+      />
     ) : (
       <PreviewCanvas
         mode={state.designMode}
@@ -235,6 +244,8 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
         onSelect={(component) => {
           setSelected(component);
           post({ type: "design/selectComponent", component });
+          // Picking a component opens its focused AI-edit panel.
+          setCompModal(true);
         }}
         onCollapse={state.designMode === "design" ? () => setPreviewCollapsed(true) : undefined}
       />
@@ -255,6 +266,7 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
             mode={state.designMode}
             onChange={(m) => {
               setState((s) => ({ ...s, designMode: m }));
+              if (m !== "design") setCompModal(false);
               post({ type: "design/mode", mode: m });
             }}
           />
@@ -353,6 +365,18 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
             onRespond={(approve) => {
               post({ type: "plan/respond", id: plan.id, approve });
               setPlan(undefined);
+            }}
+          />
+        )}
+
+        {/* Focused per-component AI panel (opened when you pick a component). */}
+        {compModal && state.designMode === "design" && state.selected && state.selected.kind !== "code" && (
+          <ComponentPromptModal
+            component={state.selected}
+            onClose={() => setCompModal(false)}
+            onApply={(prompt) => {
+              send(prompt, []);
+              setCompModal(false);
             }}
           />
         )}

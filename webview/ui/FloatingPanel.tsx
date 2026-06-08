@@ -14,6 +14,7 @@ export function FloatingPanel({
   accent,
   width = 460,
   onMinimize,
+  onClose,
   children,
 }: {
   title: string;
@@ -21,6 +22,7 @@ export function FloatingPanel({
   accent: string;
   width?: number;
   onMinimize?: () => void;
+  onClose?: () => void;
   children: ReactNode;
 }) {
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -70,6 +72,15 @@ export function FloatingPanel({
               className="flex size-6 items-center justify-center rounded-md text-white/45 transition-colors hover:bg-white/10 hover:text-white"
             >
               <Icon name="minimize" size={14} />
+            </button>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              title="Chiudi"
+              className="flex size-6 items-center justify-center rounded-md text-white/45 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <Icon name="x" size={15} />
             </button>
           )}
         </div>

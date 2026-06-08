@@ -145,6 +145,8 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
           source: info.sourceLoc || undefined,
           file: info.sourceFile || undefined,
           line: info.sourceLine || undefined,
+          cls: info.cls || undefined,
+          kind: "component",
         });
         setSelecting(false);
       }

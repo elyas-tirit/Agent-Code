@@ -248,6 +248,13 @@ export interface SelectedComponent {
   /** React component name + source (file:line) from the fiber, when available. */
   component?: string;
   source?: string;
+  /** className list of the picked element (for the component edit panel). */
+  cls?: string;
+  /** Code-selection refs (from the Code view): end line + the selected snippet. */
+  endLine?: number;
+  code?: string;
+  /** Distinguishes a code-range selection from a previewed component. */
+  kind?: "component" | "code";
 }
 
 export interface DesignState {

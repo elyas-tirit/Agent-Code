@@ -310,18 +310,26 @@ export function ChatPanel({
       </div>
 
       <div className="pt-2">
-        {selected && (
-          <div className="ac-pop mb-2 flex items-center justify-between rounded-lg border border-[#70fff3]/40 bg-[#70fff3]/[0.08] px-3 py-1.5 text-[12px] text-white/85">
-            <span className="flex min-w-0 items-center gap-1.5">
-              <Icon name="cursor" size={13} className="text-[#70fff3]" />
-              <span className="truncate">{selected.label}</span>
-              {selected.device && <span className="text-white/40">· {selected.device}</span>}
-            </span>
-            <button onClick={onClearSelected} className="text-white/50 hover:text-white">
-              <Icon name="x" size={13} />
-            </button>
-          </div>
-        )}
+        {selected &&
+          (() => {
+            const isCode = selected.kind === "code";
+            const accent = isCode ? "#3fb950" : "#70fff3";
+            return (
+              <div
+                className="ac-pop mb-2 flex items-center justify-between rounded-lg border px-3 py-1.5 text-[12px] text-white/85"
+                style={{ borderColor: `${accent}66`, background: `${accent}14` }}
+              >
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <Icon name={isCode ? "file-code" : "cursor"} size={13} style={{ color: accent }} />
+                  <span className="truncate font-mono text-[11.5px]">{selected.label}</span>
+                  {selected.device && <span className="text-white/40">· {selected.device}</span>}
+                </span>
+                <button onClick={onClearSelected} className="text-white/50 hover:text-white">
+                  <Icon name="x" size={13} />
+                </button>
+              </div>
+            );
+          })()}
         <Composer
           status={status}
           mode={mode}

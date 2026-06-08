@@ -288,6 +288,7 @@ export class DesignWorkspacePanel {
         void vscode.commands.executeCommand("agentCode.openDashboard");
         break;
       case "chat/clear":
+        this.state.selected = undefined;
         this.post({ type: "chat/cleared" });
         break;
       case "context/attach": {
@@ -334,7 +335,13 @@ export class DesignWorkspacePanel {
         break;
       case "code/open": {
         const f = readCodeFile(message.path);
-        if (f) this.post({ type: "code/file", path: message.path, content: f.content, language: f.language });
+        // Always answer so the webview's loading state clears — even if the file
+        // was deleted/became unreadable after the tree was built.
+        this.post(
+          f
+            ? { type: "code/file", path: message.path, content: f.content, language: f.language }
+            : { type: "code/file", path: message.path, content: "// Impossibile leggere il file (eliminato o non leggibile).", language: "text" },
+        );
         break;
       }
       case "settings/get":
@@ -377,27 +384,37 @@ export class DesignWorkspacePanel {
         let text = message.text;
         if (message.component) {
           const c = message.component;
-          // The picker reports the on-disk file (absolute). Make it workspace-relative
-          // so Claude can open it directly (file:line).
-          const relFile = c.file ? vscode.workspace.asRelativePath(c.file, false) : "";
-          const loc = relFile ? `${relFile}${c.line ? `:${c.line}` : ""}` : c.label;
-          const ctx = [
-            `Elemento: ${loc}`,
-            c.component ? `Componente React: <${c.component}>` : "",
-            // Redundant once we have a real file:line; keep only as a fallback.
-            !relFile && c.source ? `Sorgente: ${c.source}` : "",
-            c.tag ? `Tag: <${c.tag}>` : "",
-            c.text ? `Testo: "${c.text}"` : "",
-            c.selector ? `Selettore CSS: ${c.selector}` : "",
-            c.url ? `Pagina: ${c.url}` : "",
-            c.device ? `Viewport: ${c.device}` : "",
-            c.rect && !c.selector
-              ? `Area selezionata (frazione 0–1): x=${c.rect.x.toFixed(3)} y=${c.rect.y.toFixed(3)} w=${c.rect.w.toFixed(3)} h=${c.rect.h.toFixed(3)}`
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" · ");
-          text = `[Componente selezionato nella preview — ${ctx}]\n${text}`;
+          if (c.kind === "code") {
+            // A code-range selection from the Code view — hand Claude the exact lines.
+            const loc = c.file
+              ? `${c.file}:${c.line ?? 1}${c.endLine && c.endLine !== c.line ? `-${c.endLine}` : ""}`
+              : c.label;
+            const fence = c.code ? `\n\`\`\`\n${c.code}\n\`\`\`` : "";
+            text = `[Codice selezionato dall'editor — ${loc}]${fence}\n\n${text}`;
+          } else {
+            // The picker reports the on-disk file (absolute). Make it workspace-relative
+            // so Claude can open it directly (file:line).
+            const relFile = c.file ? vscode.workspace.asRelativePath(c.file, false) : "";
+            const loc = relFile ? `${relFile}${c.line ? `:${c.line}` : ""}` : c.label;
+            const ctx = [
+              `Elemento: ${loc}`,
+              c.component ? `Componente React: <${c.component}>` : "",
+              // Redundant once we have a real file:line; keep only as a fallback.
+              !relFile && c.source ? `Sorgente: ${c.source}` : "",
+              c.cls ? `Classi: ${c.cls}` : "",
+              c.tag ? `Tag: <${c.tag}>` : "",
+              c.text ? `Testo: "${c.text}"` : "",
+              c.selector ? `Selettore CSS: ${c.selector}` : "",
+              c.url ? `Pagina: ${c.url}` : "",
+              c.device ? `Viewport: ${c.device}` : "",
+              c.rect && !c.selector
+                ? `Area selezionata (frazione 0–1): x=${c.rect.x.toFixed(3)} y=${c.rect.y.toFixed(3)} w=${c.rect.w.toFixed(3)} h=${c.rect.h.toFixed(3)}`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            text = `[Componente selezionato nella preview — ${ctx}]\n${text}`;
+          }
         }
         text += attachmentsToText(message.attachments);
         // Real image attachments → inline base64 content blocks (Claude sees the pixels).
@@ -405,6 +422,9 @@ export class DesignWorkspacePanel {
           .map((a) => imagePartFromAttachment(a))
           .filter((p): p is NonNullable<typeof p> => Boolean(p));
         session.send(text, images);
+        // Selection has been consumed → clear the host copy so a webview re-init
+        // doesn't replay a stale chip.
+        this.state.selected = undefined;
         break;
       }
       default:
