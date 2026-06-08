@@ -15,13 +15,25 @@ let store: JsonFileStore<PersistedAgent[]> | undefined;
 
 function resolveClaudePath(configured: string): string | undefined {
   if (configured && fs.existsSync(configured)) return configured;
-  const candidates = [
-    "/opt/homebrew/bin/claude",
-    "/usr/local/bin/claude",
-    `${os.homedir()}/.claude/local/claude`,
-    `${os.homedir()}/.local/bin/claude`,
-  ];
-  return candidates.find((p) => fs.existsSync(p));
+  const home = os.homedir();
+  // Best-effort auto-detect per platform. If none match (e.g. `claude` is only on
+  // PATH), we leave it undefined and the SDK resolves it from PATH. Users can always
+  // set `agentCode.claudePath` explicitly.
+  const candidates =
+    process.platform === "win32"
+      ? [
+          path.join(process.env.APPDATA ?? "", "npm", "claude.cmd"),
+          path.join(process.env.APPDATA ?? "", "npm", "claude.exe"),
+          path.join(home, ".claude", "local", "claude.exe"),
+          path.join(home, "AppData", "Local", "Programs", "claude", "claude.exe"),
+        ]
+      : [
+          "/opt/homebrew/bin/claude",
+          "/usr/local/bin/claude",
+          path.join(home, ".claude", "local", "claude"),
+          path.join(home, ".local", "bin", "claude"),
+        ];
+  return candidates.find((p) => p && fs.existsSync(p));
 }
 
 function formatTokens(total: number): string {

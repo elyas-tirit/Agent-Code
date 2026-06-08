@@ -63,17 +63,33 @@ code --install-extension agent-code.vsix
 Then reload VS Code — the Agents dashboard opens on startup. See [INSTALL.md](INSTALL.md)
 for a step-by-step guide (and a one-command `scripts/install.sh`).
 
-**From source:**
+**From source (clone the repo):**
 
 ```bash
-npm install
-npm run build        # builds the webview + the extension
-# then press F5 in VS Code → "Run Agent Code (Extension)"
-npm run package      # → agent-code.vsix
+git clone https://github.com/elyas-tirit/Agent-Code.git
+cd Agent-Code
+npm install          # Node 18+
+npm run build        # builds the webview + the extension into dist/
 ```
+
+Then run it **either** way:
+
+- **Dev** — open the folder in VS Code and press **F5** (“Run Agent Code (Extension)”).
+  It builds and launches an Extension Development Host with Agent Code loaded.
+- **Install** — `npm run package` → `agent-code.vsix`, then
+  `code --install-extension agent-code.vsix` (or the *Install from VSIX* command).
 
 Dev loop: `npm run watch` (esbuild + Vite in watch) · checks: `npm run typecheck`,
 `npm test`.
+
+### Platforms
+
+Agent Code is a standard VS Code extension, so it runs on **Windows, macOS and Linux**.
+Building from source (`npm`) and **F5 / Install from VSIX** work the same everywhere.
+The `scripts/install.sh` helper is macOS/Linux only — on **Windows** use *Install from
+VSIX* (or run `npm run package` then `code --install-extension`). For real agents you need
+[Claude Code](https://docs.claude.com/claude-code) on your machine; if Agent Code can't
+auto-detect the `claude` CLI, point it there with the `agentCode.claudePath` setting.
 
 ## Commands
 
