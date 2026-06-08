@@ -4,6 +4,7 @@ import type { CodeNode, SelectedComponent } from "@shared/protocol";
 import { Icon } from "../../ui/Icon";
 import { FileIcon } from "../../ui/FileIcon";
 import { onHostMessage, post } from "../../vscode";
+import { t } from "../../i18n";
 
 const GREEN = "#3fb950";
 
@@ -210,8 +211,8 @@ export function CodeView({ onSelectCode }: { onSelectCode?: (ref: SelectedCompon
     <div className="flex h-full min-h-0 overflow-hidden rounded-xl border border-white/10 bg-[#0c0c0e]">
       {/* Activity rail */}
       <div className="flex w-12 shrink-0 flex-col items-center gap-1.5 border-r border-white/[0.06] bg-black/40 py-3">
-        <RailBtn icon="files" label="Esplora risorse" activeIcon />
-        <RailBtn icon="puzzle" label="Estensioni" />
+        <RailBtn icon="files" label={t("Explorer", "Esplora risorse")} activeIcon />
+        <RailBtn icon="puzzle" label={t("Extensions", "Estensioni")} />
         <RailBtn icon="github" label="Source control" />
       </div>
 
@@ -223,7 +224,7 @@ export function CodeView({ onSelectCode }: { onSelectCode?: (ref: SelectedCompon
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto pb-3">
           {tree.length === 0 ? (
-            <div className="px-4 py-6 text-[12px] text-white/35">Nessun file nel workspace.</div>
+            <div className="px-4 py-6 text-[12px] text-white/35">{t("No files in the workspace.", "Nessun file nel workspace.")}</div>
           ) : (
             tree.map((n) => <TreeNode key={n.path} node={n} depth={0} openPath={active} onOpen={openFile} />)
           )}
@@ -265,7 +266,7 @@ export function CodeView({ onSelectCode }: { onSelectCode?: (ref: SelectedCompon
               </button>
               <button
                 onClick={() => void navigator.clipboard.writeText(current.content).catch(() => {})}
-                title="Copia file"
+                title={t("Copy file", "Copia file")}
                 className="flex size-7 items-center justify-center rounded-md hover:bg-white/5 hover:text-white"
               >
                 <Icon name="copy" size={14} />
@@ -338,16 +339,16 @@ export function CodeView({ onSelectCode }: { onSelectCode?: (ref: SelectedCompon
               <div className="ac-pop sticky bottom-3 left-1/2 z-10 mx-auto flex w-fit -translate-x-0 items-center gap-2 rounded-full border border-[#3fb950]/40 bg-[#10160f]/95 py-1.5 pl-3 pr-1.5 text-[12.5px] text-white shadow-[0_12px_36px_rgba(0,0,0,0.6)] backdrop-blur">
                 <Icon name="cursor" size={13} className="text-[#7ee787]" />
                 <span className="text-white/80">
-                  {range.start === range.end ? `Riga ${range.start}` : `Righe ${range.start}–${range.end}`}
+                  {range.start === range.end ? t(`Line ${range.start}`, `Riga ${range.start}`) : t(`Lines ${range.start}–${range.end}`, `Righe ${range.start}–${range.end}`)}
                 </span>
                 <button
                   onClick={() => void navigator.clipboard.writeText(lines.slice(range.start - 1, range.end).join("\n")).catch(() => {})}
-                  title="Copia"
+                  title={t("Copy", "Copia")}
                   className="flex size-7 items-center justify-center rounded-full text-white/55 hover:bg-white/10 hover:text-white"
                 >
                   <Icon name="copy" size={13} />
                 </button>
-                <button onClick={() => setSel(null)} title="Annulla" className="flex size-7 items-center justify-center rounded-full text-white/45 hover:bg-white/10 hover:text-white">
+                <button onClick={() => setSel(null)} title={t("Cancel", "Annulla")} className="flex size-7 items-center justify-center rounded-full text-white/45 hover:bg-white/10 hover:text-white">
                   <Icon name="x" size={13} />
                 </button>
                 <button
@@ -355,7 +356,7 @@ export function CodeView({ onSelectCode }: { onSelectCode?: (ref: SelectedCompon
                   className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-medium text-black"
                   style={{ background: "linear-gradient(90deg,#7ee787,#3fb950)" }}
                 >
-                  <Icon name="sparkles" size={13} /> Chiedi all'AI
+                  <Icon name="sparkles" size={13} /> {t("Ask AI", "Chiedi all'AI")}
                 </button>
               </div>
             )}
@@ -363,7 +364,7 @@ export function CodeView({ onSelectCode }: { onSelectCode?: (ref: SelectedCompon
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-white/35">
             <Icon name="file-code" size={40} className="text-white/15" />
-            <p className="text-[13px]">Apri un file dall'Explorer per leggerlo o selezionare righe per l'AI.</p>
+            <p className="text-[13px]">{t("Open a file from the Explorer to read it, or select lines for the AI.", "Apri un file dall'Explorer per leggerlo o selezionare righe per l'AI.")}</p>
           </div>
         )}
       </div>

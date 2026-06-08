@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { PermissionDecision, PermissionRequest } from "@shared/protocol";
 import { Icon } from "../../ui/Icon";
 import { FloatingPanel } from "../../ui/FloatingPanel";
+import { t } from "../../i18n";
 
 interface ApprovalModalProps {
   request: PermissionRequest;
@@ -38,7 +39,7 @@ export function ApprovalModal({ request, onRespond, onMinimize }: ApprovalModalP
   }, [request, onRespond]);
 
   return (
-    <FloatingPanel title="Richiesta di approvazione" icon="shield" accent="#4067e8" width={440} onMinimize={onMinimize}>
+    <FloatingPanel title={t("Approval request", "Richiesta di approvazione")} icon="shield" accent="#4067e8" width={440} onMinimize={onMinimize}>
       <div className="p-5">
         <p className="text-[15px] leading-snug text-white">{request.title}</p>
         {request.description && <p className="mt-2 text-[13px] leading-relaxed text-white/55">{request.description}</p>}
@@ -52,7 +53,7 @@ export function ApprovalModal({ request, onRespond, onMinimize }: ApprovalModalP
             onClick={() => onRespond("allow")}
             className="flex h-10 w-full items-center justify-center rounded-lg bg-[#4067e8] text-[14px] font-medium text-white hover:bg-[#3457cf]"
           >
-            Consenti una volta <Key>1</Key>
+            {t("Allow once", "Consenti una volta")} <Key>1</Key>
           </button>
           <div className="flex gap-2">
             {request.canAlwaysAllow && (
@@ -60,14 +61,14 @@ export function ApprovalModal({ request, onRespond, onMinimize }: ApprovalModalP
                 onClick={() => onRespond("always")}
                 className="flex h-10 flex-1 items-center justify-center rounded-lg bg-white/10 text-[13px] text-white hover:bg-white/15"
               >
-                Consenti sempre <Key>2</Key>
+                {t("Always allow", "Consenti sempre")} <Key>2</Key>
               </button>
             )}
             <button
               onClick={() => onRespond("deny")}
               className="flex h-10 flex-1 items-center justify-center rounded-lg bg-white/5 text-[13px] text-white/80 hover:bg-white/10"
             >
-              Rifiuta <Key>3</Key>
+              {t("Deny", "Rifiuta")} <Key>3</Key>
             </button>
           </div>
         </div>

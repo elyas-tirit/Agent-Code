@@ -12,7 +12,7 @@
   <body>
     <div id="root"></div>
     <script>
-      const fakeSettings = { userName: "Elyas", defaultMode: "bypassPermissions", model: "", effort: "high", thinking: true, fullAccess: true, previewUrl: "http://localhost:3000", openDashboardOnStartup: true };
+      const fakeSettings = { userName: "Alex", language: "en", defaultMode: "bypassPermissions", model: "", effort: "high", thinking: true, fullAccess: true, previewUrl: "http://localhost:3000", openDashboardOnStartup: true };
       window.acquireVsCodeApi = () => ({
         postMessage(m) {
           if (m && m.type === "settings/get") {
@@ -50,10 +50,11 @@
         description: desc, actions: [],
       });
       window.__AGENT_CODE__ = {
+        lang: params.get("lang") || "en",
         view: "dashboard",
         media: "/dist/webview/media",
         state: {
-          greeting: "Buongiorno, Elyas",
+          greeting: "Good morning, Alex",
           usage: { percent: 23, resetsInLabel: "Reset tra 2h 40m", known: true, tokens,
             windows: [
               { type: "five_hour", label: "Sessione (5 ore)", percent: 23, resetsInLabel: "Reset tra 2h 40m", known: true },

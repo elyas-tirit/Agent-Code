@@ -4,6 +4,7 @@ import { EFFORT_OPTIONS, MODEL_OPTIONS } from "@shared/protocol";
 import { Icon, IconName, FigmaGlyph } from "../../ui/Icon";
 import { FigmaModal } from "../../ui/FigmaModal";
 import { onHostMessage, post } from "../../vscode";
+import { t } from "../../i18n";
 
 const CYAN = "rgb(112,255,243)";
 
@@ -15,10 +16,10 @@ const MODE_META: Record<PermissionMode, { label: string; icon: IconName; color: 
 };
 const CYCLE: PermissionMode[] = ["default", "plan", "acceptEdits", "bypassPermissions"];
 const MODE_HINT: Record<PermissionMode, string> = {
-  default: "Ask — chiede conferma per ogni azione",
-  plan: "Plan — pianifica senza modificare nulla",
-  acceptEdits: "Edit Auto — accetta le modifiche ai file",
-  bypassPermissions: "Auto — nessuna conferma (full auto)",
+  default: t("Ask — asks for confirmation before every action", "Ask — chiede conferma per ogni azione"),
+  plan: t("Plan — plans without changing anything", "Plan — pianifica senza modificare nulla"),
+  acceptEdits: t("Edit Auto — accepts file edits", "Edit Auto — accetta le modifiche ai file"),
+  bypassPermissions: t("Auto — no confirmation (full auto)", "Auto — nessuna conferma (full auto)"),
 };
 const gradientFor = (m: PermissionMode) => `linear-gradient(90deg, ${MODE_META[m].color} 0%, ${CYAN} 100%)`;
 
@@ -74,7 +75,7 @@ function AttachmentChip({ att, onRemove, onPreview }: { att: Attachment; onRemov
   return (
     <div
       onClick={onPreview}
-      title={onPreview ? "Anteprima" : undefined}
+      title={onPreview ? t("Preview", "Anteprima") : undefined}
       className={`ac-pop group relative flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] py-1.5 pl-1.5 pr-2 text-[12px] text-white/80 ${onPreview ? "cursor-pointer hover:border-white/25" : ""}`}
     >
       {att.kind === "image" && att.dataUrl ? (
@@ -126,8 +127,8 @@ export function Composer({
   const meta = MODE_META[mode];
   const grad = gradientFor(mode);
   const working = status === "working" || status === "asking";
-  // The composer "stroke" is light + only present while you type or while Claude
-  // is working; it fades away when idle.
+  // The composer "stroke" always carries the mode color; focusing or while Claude
+  // is working we layer a soft glow on top.
   const active = focused || working;
   const hasText = draft.trim().length > 0;
   const canSend = hasText || attachments.length > 0;
@@ -184,7 +185,7 @@ export function Composer({
       .filter((f) => f.type.startsWith("image/"))
       .forEach((file) => {
         const reader = new FileReader();
-        reader.onload = () => post({ type: "image/save", dataUrl: String(reader.result), name: file.name || "immagine.png" });
+        reader.onload = () => post({ type: "image/save", dataUrl: String(reader.result), name: file.name || t("image.png", "immagine.png") });
         reader.readAsDataURL(file);
       });
   };
@@ -212,7 +213,7 @@ export function Composer({
     if (!file) return;
     e.preventDefault();
     const reader = new FileReader();
-    reader.onload = () => post({ type: "image/save", dataUrl: String(reader.result), name: file.name || "incolla.png" });
+    reader.onload = () => post({ type: "image/save", dataUrl: String(reader.result), name: file.name || t("paste.png", "incolla.png") });
     reader.readAsDataURL(file);
   };
 
@@ -220,7 +221,7 @@ export function Composer({
     <div
       className="relative rounded-[12px] p-px pt-[2px]"
       style={{
-        background: active ? grad : "rgba(255,255,255,0.10)",
+        background: grad,
         boxShadow: active ? `0 0 16px -9px ${meta.color}` : "none",
         transition: "background .35s ease, box-shadow .35s ease",
       }}
@@ -234,7 +235,7 @@ export function Composer({
       {/* @-mention autocomplete */}
       {mention && mentionMatches.length > 0 && (
         <div className="ac-pop absolute bottom-[calc(100%+6px)] left-0 z-50 max-h-60 w-[340px] overflow-auto rounded-xl border border-white/10 bg-[#1b1b1b] p-1.5 shadow-[0_18px_50px_rgba(0,0,0,0.6)]">
-          <div className="px-2 pb-1 pt-1 text-[11px] uppercase tracking-wide text-white/35">Menziona file</div>
+          <div className="px-2 pb-1 pt-1 text-[11px] uppercase tracking-wide text-white/35">{t("Mention file", "Menziona file")}</div>
           {mentionMatches.map((f) => (
             <button
               key={f}
@@ -252,7 +253,7 @@ export function Composer({
       )}
       {dragging && (
         <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center rounded-[12px] border-2 border-dashed border-[#70fff3] bg-[#70fff3]/10 text-[13px] font-medium text-[#70fff3]">
-          Rilascia l'immagine qui
+          {t("Drop the image here", "Rilascia l'immagine qui")}
         </div>
       )}
       <div className="font-dm rounded-[11px] bg-black px-3 pb-2.5 pt-2.5">
@@ -288,7 +289,7 @@ export function Composer({
             }
           }}
           rows={2}
-          placeholder="Chiedimi qualsiasi cosa…  (incolla un'immagine, allega un file)"
+          placeholder={t("Ask me anything…  (paste an image, attach a file)", "Chiedimi qualsiasi cosa…  (incolla un'immagine, allega un file)")}
           className="font-dm max-h-40 min-h-[40px] w-full resize-none bg-transparent text-[14px] text-white outline-none placeholder:text-[#898989]"
         />
 
@@ -296,7 +297,7 @@ export function Composer({
           <div className="flex items-center gap-1.5">
             {/* + context menu */}
             <button
-              title="Aggiungi contesto"
+              title={t("Add context", "Aggiungi contesto")}
               onClick={() => setMenu(menu === "context" ? null : "context")}
               className="flex size-[35px] items-center justify-center rounded-lg text-white/55 transition-colors hover:bg-white/5 hover:text-white"
             >
@@ -304,19 +305,19 @@ export function Composer({
             </button>
             {menu === "context" && (
               <Popover onClose={() => setMenu(null)}>
-                <div className="px-2 pb-1 pt-1 text-[11px] uppercase tracking-wide text-white/35">Contesto</div>
-                <MenuItem icon="image" label="Allega immagine…" onClick={() => { post({ type: "context/attachImage" }); setMenu(null); }} />
-                <MenuItem icon="paperclip" label="Allega file…" onClick={() => { post({ type: "context/attach" }); setMenu(null); }} />
-                <MenuItem glyph={<FigmaGlyph size={15} />} label="Allega file Figma…" onClick={() => { setFigmaOpen(true); setMenu(null); }} />
-                <MenuItem icon="folder" label="Menziona file dal progetto…" onClick={() => { post({ type: "context/mention" }); setMenu(null); }} />
+                <div className="px-2 pb-1 pt-1 text-[11px] uppercase tracking-wide text-white/35">{t("Context", "Contesto")}</div>
+                <MenuItem icon="image" label={t("Attach image…", "Allega immagine…")} onClick={() => { post({ type: "context/attachImage" }); setMenu(null); }} />
+                <MenuItem icon="paperclip" label={t("Attach file…", "Allega file…")} onClick={() => { post({ type: "context/attach" }); setMenu(null); }} />
+                <MenuItem glyph={<FigmaGlyph size={15} />} label={t("Attach Figma file…", "Allega file Figma…")} onClick={() => { setFigmaOpen(true); setMenu(null); }} />
+                <MenuItem icon="folder" label={t("Mention file from project…", "Menziona file dal progetto…")} onClick={() => { post({ type: "context/mention" }); setMenu(null); }} />
                 <div className="my-1 h-px bg-white/10" />
-                <MenuItem icon="trash" label="Pulisci conversazione" onClick={() => { post({ type: "chat/clear" }); setMenu(null); }} />
+                <MenuItem icon="trash" label={t("Clear conversation", "Pulisci conversazione")} onClick={() => { post({ type: "chat/clear" }); setMenu(null); }} />
               </Popover>
             )}
 
             {/* sparkles → settings menu */}
             <button
-              title="Impostazioni rapide"
+              title={t("Quick settings", "Impostazioni rapide")}
               onClick={() => setMenu(menu === "settings" ? null : "settings")}
               className="flex size-[35px] items-center justify-center rounded-lg text-white/55 transition-colors hover:bg-white/5 hover:text-white"
             >
@@ -324,7 +325,7 @@ export function Composer({
             </button>
             {menu === "settings" && (
               <Popover onClose={() => setMenu(null)}>
-                <div className="px-2 pb-1 pt-1 text-[11px] uppercase tracking-wide text-white/35">Modello</div>
+                <div className="px-2 pb-1 pt-1 text-[11px] uppercase tracking-wide text-white/35">{t("Model", "Modello")}</div>
                 {MODEL_OPTIONS.map((o) => (
                   <MenuItem
                     key={o.id}
@@ -360,7 +361,7 @@ export function Composer({
                 </div>
                 <div className="my-1 h-px bg-white/10" />
                 <MenuItem icon="gauge" label="Account & usage" onClick={() => { onOpenUsage(); setMenu(null); }} />
-                <MenuItem icon="sliders" label="Tutte le impostazioni…" onClick={() => { onOpenSettings(); setMenu(null); }} />
+                <MenuItem icon="sliders" label={t("All settings…", "Tutte le impostazioni…")} onClick={() => { onOpenSettings(); setMenu(null); }} />
               </Popover>
             )}
 
@@ -383,7 +384,7 @@ export function Composer({
           <button
             onClick={onSendClick}
             disabled={!sendActive}
-            title={working ? "Ferma (stop)" : "Invia"}
+            title={working ? t("Stop", "Ferma (stop)") : t("Send", "Invia")}
             className={`flex size-[35px] items-center justify-center rounded-lg text-white transition-all ${sendActive ? "" : "bg-white/15 text-white/60"}`}
             style={sendActive ? { background: grad, boxShadow: `0 0 18px -2px ${meta.color}` } : undefined}
           >

@@ -2,6 +2,7 @@ import * as http from "node:http";
 import * as https from "node:https";
 import type { AddressInfo } from "node:net";
 import type { Duplex } from "node:stream";
+import { t } from "../i18n";
 
 /**
  * A tiny localhost reverse proxy for the design preview.
@@ -257,10 +258,10 @@ function emptyStatePage(origin: string): string {
   @keyframes bp{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-5px);opacity:1}}
   </style></head><body><div class="card">
     <div class="orb"><svg viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V5"/><circle cx="12" cy="3.5" r="1.4" fill="#06060a" stroke="none"/><path d="M9 13h.01M15 13h.01"/></svg></div>
-    <h1>In attesa del tuo frontend</h1>
-    <p>Avvia il dev server e la preview comparirà qui in automatico.<br>Atteso su <code>${safe}</code></p>
+    <h1>${t("Waiting for your frontend", "In attesa del tuo frontend")}</h1>
+    <p>${t("Start the dev server and the preview will appear here automatically.", "Avvia il dev server e la preview comparirà qui in automatico.")}<br>${t("Expected at", "Atteso su")} <code>${safe}</code></p>
     <div class="dots"><i></i><i></i><i></i></div>
-    <div class="wait">Controllo la connessione…</div>
+    <div class="wait">${t("Checking the connection…", "Controllo la connessione…")}</div>
   </div>
   <script>setInterval(function(){fetch(location.href,{method:"HEAD",cache:"no-store"}).then(function(r){if(r.ok)location.reload()}).catch(function(){})},2000)</script>
   </body></html>`;

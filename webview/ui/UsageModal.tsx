@@ -1,6 +1,7 @@
 import type { UsageInfo } from "@shared/protocol";
 import { Modal } from "./Modal";
 import { Icon } from "./Icon";
+import { t as tr } from "../i18n";
 
 function fmt(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
@@ -67,28 +68,31 @@ export function UsageModal({
       {acc && (
         <div className="mb-4 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-2.5">
           <div className="mb-1 text-[11px] uppercase tracking-wide text-white/40">Account</div>
-          <Row k="Metodo auth" v={acc.authMethod} />
+          <Row k={tr("Auth method", "Metodo auth")} v={acc.authMethod} />
           {acc.email && <Row k="Email" v={acc.email} />}
-          {acc.organization && <Row k="Organizzazione" v={acc.organization} />}
-          {acc.plan && <Row k="Piano" v={acc.plan} />}
+          {acc.organization && <Row k={tr("Organization", "Organizzazione")} v={acc.organization} />}
+          {acc.plan && <Row k={tr("Plan", "Piano")} v={acc.plan} />}
         </div>
       )}
 
       {/* Token totals */}
       <div className="grid grid-cols-3 gap-2.5">
-        <Stat label="Token usati" value={t ? fmt(t.total) : "—"} sub={t ? `${t.input.toLocaleString()} in · ${t.output.toLocaleString()} out` : undefined} />
-        <Stat label="Cache letti" value={t ? fmt(t.cacheRead) : "—"} sub={t ? `${fmt(t.cacheCreation)} creati` : undefined} />
-        <Stat label="Costo stimato" value={t && t.costUsd > 0 ? `$${t.costUsd.toFixed(2)}` : "$0.00"} sub="abbonamento" />
+        <Stat label={tr("Tokens used", "Token usati")} value={t ? fmt(t.total) : "—"} sub={t ? `${t.input.toLocaleString()} in · ${t.output.toLocaleString()} out` : undefined} />
+        <Stat label={tr("Cache reads", "Cache letti")} value={t ? fmt(t.cacheRead) : "—"} sub={t ? tr(`${fmt(t.cacheCreation)} created`, `${fmt(t.cacheCreation)} creati`) : undefined} />
+        <Stat label={tr("Estimated cost", "Costo stimato")} value={t && t.costUsd > 0 ? `$${t.costUsd.toFixed(2)}` : "$0.00"} sub={tr("subscription", "abbonamento")} />
       </div>
 
       {/* Rate-limit windows */}
       <div className="mt-5 flex items-center gap-2 text-[12px] font-medium uppercase tracking-wide text-white/45">
-        <Icon name="clock" size={14} /> Limiti d'uso
+        <Icon name="clock" size={14} /> {tr("Usage limits", "Limiti d'uso")}
       </div>
       <div className="mt-2.5 space-y-3.5">
         {windows.length === 0 && (
           <p className="text-[12.5px] text-white/40">
-            Nessun dato sui limiti ancora. Comparirà appena Claude elabora una richiesta.
+            {tr(
+              "No limit data yet. It will appear as soon as Claude processes a request.",
+              "Nessun dato sui limiti ancora. Comparirà appena Claude elabora una richiesta.",
+            )}
           </p>
         )}
         {windows.map((w) => (
@@ -106,9 +110,10 @@ export function UsageModal({
       </div>
 
       <p className="mt-5 text-[11px] leading-relaxed text-white/35">
-        Dati reali riportati da Claude per il tuo abbonamento. La percentuale esatta della finestra
-        viene mostrata solo quando l'SDK la fornisce; altrimenti vedi lo stato (sotto i limiti) e i
-        token realmente consumati.
+        {tr(
+          "Real data reported by Claude for your subscription. The exact window percentage is shown only when the SDK provides it; otherwise you see the status (under the limits) and the tokens actually consumed.",
+          "Dati reali riportati da Claude per il tuo abbonamento. La percentuale esatta della finestra viene mostrata solo quando l'SDK la fornisce; altrimenti vedi lo stato (sotto i limiti) e i token realmente consumati.",
+        )}
       </p>
     </Modal>
   );

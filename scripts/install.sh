@@ -12,10 +12,10 @@ ok()  { printf "\033[32m✓\033[0m %s\n" "$1"; }
 warn(){ printf "\033[33m!\033[0m %s\n" "$1"; }
 die() { printf "\033[31m✗ %s\033[0m\n" "$1" >&2; exit 1; }
 
-[ -f "$VSIX" ] || die "Non trovo agent-code.vsix accanto a questo script ($DIR)."
+[ -f "$VSIX" ] || die "Can't find agent-code.vsix next to this script ($DIR)."
 
 # 1) Locate a VS Code / Cursor / VSCodium CLI.
-say "Cerco VS Code / Cursor / VSCodium…"
+say "Looking for VS Code / Cursor / VSCodium…"
 CLI=""
 for c in code cursor codium code-insiders; do
   if command -v "$c" >/dev/null 2>&1; then CLI="$c"; break; fi
@@ -43,34 +43,34 @@ if [ -z "$CLI" ]; then
 fi
 
 if [ -z "$CLI" ]; then
-  warn "Non ho trovato l'eseguibile da riga di comando."
+  warn "Couldn't find the command-line launcher."
   cat <<EOF
 
-Installa a mano (30 secondi):
-  1. Apri VS Code
+Install manually (30 seconds):
+  1. Open VS Code
   2. Cmd/Ctrl + Shift + P  →  "Install from VSIX"
-  3. Scegli:  $VSIX
-  4. Riavvia VS Code
+  3. Pick:  $VSIX
+  4. Restart VS Code
 
 EOF
   exit 1
 fi
 
-ok "Editor trovato: $CLI"
+ok "Editor found: $CLI"
 
 # 2) Install the extension.
-say "Installo Agent Code…"
+say "Installing Agent Code…"
 "$CLI" --install-extension "$VSIX" --force
 
 # 3) Check the Claude Code prerequisite (real vs demo).
 echo
 if command -v claude >/dev/null 2>&1; then
-  ok "Claude Code rilevato → agenti REALI attivi (usa il tuo login/abbonamento)."
+  ok "Claude Code detected → REAL agents active (uses your login/subscription)."
 else
-  warn "Claude Code (CLI \`claude\`) non trovato → l'app parte in modalità DEMO (simulata)."
-  echo "    Per gli agenti veri:  npm install -g @anthropic-ai/claude-code  &&  claude  (login una volta)"
+  warn "Claude Code (\`claude\` CLI) not found → the app starts in DEMO (simulated) mode."
+  echo "    For real agents:  npm install -g @anthropic-ai/claude-code  &&  claude  (log in once)"
 fi
 
 echo
-ok "Fatto! Riavvia VS Code: la dashboard Agenti si apre da sola."
-echo "   (altrimenti: Cmd/Ctrl + Shift + P → \"Agent Code: Open Agents Dashboard\")"
+ok "Done! Restart VS Code — the Agents dashboard opens automatically."
+echo "   (otherwise: Cmd/Ctrl + Shift + P → \"Agent Code: Open Agents Dashboard\")"

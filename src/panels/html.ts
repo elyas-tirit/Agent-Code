@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { WebviewView } from "../shared/protocol";
+import { getHostLang } from "../i18n";
 
 function getNonce(): string {
   let text = "";
@@ -32,10 +33,12 @@ export function getWebviewHtml(
   ].join("; ");
 
   // Embed initial state safely (avoid breaking out of the script tag).
-  const bootstrap = JSON.stringify({ view, state: initialState, media: mediaUri.toString() }).replace(
-    /</g,
-    "\\u003c",
-  );
+  const bootstrap = JSON.stringify({
+    view,
+    state: initialState,
+    media: mediaUri.toString(),
+    lang: getHostLang(),
+  }).replace(/</g, "\\u003c");
 
   return `<!DOCTYPE html>
 <html lang="it">

@@ -1,5 +1,6 @@
 import { ReactNode, useRef, useState } from "react";
 import { Icon, IconName } from "./Icon";
+import { t } from "../i18n";
 
 /**
  * A draggable, minimizable floating panel used for the approval / question / plan
@@ -68,7 +69,7 @@ export function FloatingPanel({
           {onMinimize && (
             <button
               onClick={onMinimize}
-              title="Riduci — rispondi dopo"
+              title={t("Minimize — answer later", "Riduci — rispondi dopo")}
               className="flex size-6 items-center justify-center rounded-md text-white/45 transition-colors hover:bg-white/10 hover:text-white"
             >
               <Icon name="minimize" size={14} />
@@ -77,7 +78,7 @@ export function FloatingPanel({
           {onClose && (
             <button
               onClick={onClose}
-              title="Chiudi"
+              title={t("Close", "Chiudi")}
               className="flex size-6 items-center justify-center rounded-md text-white/45 transition-colors hover:bg-white/10 hover:text-white"
             >
               <Icon name="x" size={15} />

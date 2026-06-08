@@ -1,4 +1,5 @@
 import { PermissionMode, ToolDiff } from "../shared/protocol";
+import { t } from "../i18n";
 
 /** Build a before/after diff from an Edit/Write/MultiEdit tool input. */
 export function diffFromToolInput(name: string, input: Record<string, unknown>): ToolDiff | undefined {
@@ -27,7 +28,7 @@ export function deriveTitle(text: string): string {
       .replace(/^\[Componente selezionato:[^\]]*\]\s*/i, "")
       .split("\n")
       .map((l) => l.trim())
-      .find((l) => l.length > 0) ?? "Nuova conversazione";
+      .find((l) => l.length > 0) ?? t("New conversation", "Nuova conversazione");
   const trimmed = firstLine.length > 48 ? firstLine.slice(0, 47).trimEnd() + "…" : firstLine;
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
@@ -37,14 +38,14 @@ export function summarizeTool(name: string, input: Record<string, unknown>): str
   const get = (k: string) => (typeof input?.[k] === "string" ? (input[k] as string) : undefined);
   switch (name) {
     case "Bash":
-      return get("command")?.slice(0, 80) ?? "comando shell";
+      return get("command")?.slice(0, 80) ?? t("shell command", "comando shell");
     case "Read":
     case "Edit":
     case "Write":
     case "NotebookEdit":
       return get("file_path") ?? get("path") ?? name;
     case "Grep":
-      return get("pattern") ?? "ricerca";
+      return get("pattern") ?? t("search", "ricerca");
     case "Glob":
       return get("pattern") ?? "glob";
     case "WebFetch":

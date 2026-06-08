@@ -4,6 +4,7 @@ import { AgentManager } from "../agents/AgentManager";
 import { AgentSession } from "../agents/types";
 import { AgentSettings, ClientMessage, DesignState, EffortLevel, HostMessage } from "../shared/protocol";
 import { PreviewProxy } from "../preview/PreviewProxy";
+import { getHostLang, t } from "../i18n";
 import { getWebviewHtml } from "./html";
 import {
   attachmentFromFile,
@@ -21,6 +22,11 @@ const DETACHED_KEY = "__design__";
 
 export class DesignWorkspacePanel {
   private static panels = new Map<string, DesignWorkspacePanel>();
+
+  /** Push a language change to every open design webview. */
+  static broadcastLang(lang: "en" | "it"): void {
+    for (const p of DesignWorkspacePanel.panels.values()) p.post({ type: "lang/set", lang });
+  }
 
   private readonly panel: vscode.WebviewPanel;
   private disposables: vscode.Disposable[] = [];
@@ -41,7 +47,7 @@ export class DesignWorkspacePanel {
       existing.panel.reveal(vscode.ViewColumn.One);
       return;
     }
-    const title = agentId ? manager.getCard(agentId)?.name ?? "Agente" : "Design";
+    const title = agentId ? manager.getCard(agentId)?.name ?? t("Agent", "Agente") : "Design";
     const panel = vscode.window.createWebviewPanel(
       "agentCode.design",
       title,
@@ -75,7 +81,7 @@ export class DesignWorkspacePanel {
     };
 
     this.state = {
-      title: card?.name ?? "Nuova conversazione",
+      title: card?.name ?? t("New conversation", "Nuova conversazione"),
       status: card?.status ?? "ready",
       mode: acCfg.get<DesignState["mode"]>("defaultMode", "bypassPermissions"),
       designMode: "design",
@@ -199,7 +205,7 @@ export class DesignWorkspacePanel {
           this.post({ type: "chat/done" });
           break;
         case "error":
-          this.post({ type: "chat/append", delta: `\n[errore] ${event.message}`, channel: "text" });
+          this.post({ type: "chat/append", delta: t(`\n[error] ${event.message}`, `\n[errore] ${event.message}`), channel: "text" });
           this.post({ type: "chat/done" });
           break;
         default:
@@ -233,7 +239,7 @@ export class DesignWorkspacePanel {
         // plan). Then flush anything that was emitted before the webview was ready.
         this.ready = true;
         const buffered = this.outbox.splice(0);
-        void this.panel.webview.postMessage({ type: "init", view: "design", state: this.state, media: this.mediaUri });
+        void this.panel.webview.postMessage({ type: "init", view: "design", state: this.state, media: this.mediaUri, lang: getHostLang() });
         for (const m of buffered) void this.panel.webview.postMessage(m);
         break;
       }
@@ -292,23 +298,23 @@ export class DesignWorkspacePanel {
         this.post({ type: "chat/cleared" });
         break;
       case "context/attach": {
-        const uris = await vscode.window.showOpenDialog({ canSelectMany: true, openLabel: "Allega" });
+        const uris = await vscode.window.showOpenDialog({ canSelectMany: true, openLabel: t("Attach", "Allega") });
         for (const u of uris ?? []) this.post({ type: "composer/attach", attachment: attachmentFromFile(u, "file") });
         break;
       }
       case "context/attachImage": {
         const uris = await vscode.window.showOpenDialog({
           canSelectMany: true,
-          openLabel: "Allega immagine",
-          filters: { Immagini: ["png", "jpg", "jpeg", "gif", "webp"] },
+          openLabel: t("Attach image", "Allega immagine"),
+          filters: { [t("Images", "Immagini")]: ["png", "jpg", "jpeg", "gif", "webp"] },
         });
         for (const u of uris ?? []) this.post({ type: "composer/attach", attachment: attachmentFromFile(u, "image") });
         break;
       }
       case "context/attachFigma": {
         const url = await vscode.window.showInputBox({
-          title: "Allega file Figma",
-          prompt: "Incolla il link a un frame Figma (con node-id)",
+          title: t("Attach Figma file", "Allega file Figma"),
+          prompt: t("Paste the link to a Figma frame (with node-id)", "Incolla il link a un frame Figma (con node-id)"),
           placeHolder: "https://www.figma.com/design/…?node-id=123-456",
           ignoreFocusOut: true,
         });
@@ -326,7 +332,7 @@ export class DesignWorkspacePanel {
       case "context/mention": {
         const files = await vscode.workspace.findFiles("**/*", "**/{node_modules,dist,.git}/**", 400);
         const labels = files.map((u) => vscode.workspace.asRelativePath(u)).sort();
-        const pick = await vscode.window.showQuickPick(labels, { placeHolder: "Menziona un file del progetto" });
+        const pick = await vscode.window.showQuickPick(labels, { placeHolder: t("Mention a project file", "Menziona un file del progetto") });
         if (pick) this.post({ type: "composer/insert", text: `@${pick} ` });
         break;
       }
@@ -340,7 +346,7 @@ export class DesignWorkspacePanel {
         this.post(
           f
             ? { type: "code/file", path: message.path, content: f.content, language: f.language }
-            : { type: "code/file", path: message.path, content: "// Impossibile leggere il file (eliminato o non leggibile).", language: "text" },
+            : { type: "code/file", path: message.path, content: t("// Unable to read the file (deleted or unreadable).", "// Impossibile leggere il file (eliminato o non leggibile)."), language: "text" },
         );
         break;
       }
@@ -372,7 +378,7 @@ export class DesignWorkspacePanel {
           .update("effort", message.effort, vscode.ConfigurationTarget.Global);
         this.state.settings.effort = message.effort;
         this.post({ type: "agent/settings", settings: this.state.settings });
-        vscode.window.setStatusBarMessage("Agent Code: effort applicato ai nuovi agenti.", 3000);
+        vscode.window.setStatusBarMessage(t("Agent Code: effort applied to new agents.", "Agent Code: effort applicato ai nuovi agenti."), 3000);
         break;
       case "settings/openUsage":
         // The usage modal is rendered in-place by the webview; nothing to do host-side.
@@ -390,30 +396,30 @@ export class DesignWorkspacePanel {
               ? `${c.file}:${c.line ?? 1}${c.endLine && c.endLine !== c.line ? `-${c.endLine}` : ""}`
               : c.label;
             const fence = c.code ? `\n\`\`\`\n${c.code}\n\`\`\`` : "";
-            text = `[Codice selezionato dall'editor — ${loc}]${fence}\n\n${text}`;
+            text = `${t(`[Code selected in the editor — ${loc}]`, `[Codice selezionato dall'editor — ${loc}]`)}${fence}\n\n${text}`;
           } else {
             // The picker reports the on-disk file (absolute). Make it workspace-relative
             // so Claude can open it directly (file:line).
             const relFile = c.file ? vscode.workspace.asRelativePath(c.file, false) : "";
             const loc = relFile ? `${relFile}${c.line ? `:${c.line}` : ""}` : c.label;
             const ctx = [
-              `Elemento: ${loc}`,
-              c.component ? `Componente React: <${c.component}>` : "",
+              t(`Element: ${loc}`, `Elemento: ${loc}`),
+              c.component ? t(`React component: <${c.component}>`, `Componente React: <${c.component}>`) : "",
               // Redundant once we have a real file:line; keep only as a fallback.
-              !relFile && c.source ? `Sorgente: ${c.source}` : "",
-              c.cls ? `Classi: ${c.cls}` : "",
-              c.tag ? `Tag: <${c.tag}>` : "",
-              c.text ? `Testo: "${c.text}"` : "",
-              c.selector ? `Selettore CSS: ${c.selector}` : "",
-              c.url ? `Pagina: ${c.url}` : "",
-              c.device ? `Viewport: ${c.device}` : "",
+              !relFile && c.source ? t(`Source: ${c.source}`, `Sorgente: ${c.source}`) : "",
+              c.cls ? t(`Classes: ${c.cls}`, `Classi: ${c.cls}`) : "",
+              c.tag ? t(`Tag: <${c.tag}>`, `Tag: <${c.tag}>`) : "",
+              c.text ? t(`Text: "${c.text}"`, `Testo: "${c.text}"`) : "",
+              c.selector ? t(`CSS selector: ${c.selector}`, `Selettore CSS: ${c.selector}`) : "",
+              c.url ? t(`Page: ${c.url}`, `Pagina: ${c.url}`) : "",
+              c.device ? t(`Viewport: ${c.device}`, `Viewport: ${c.device}`) : "",
               c.rect && !c.selector
-                ? `Area selezionata (frazione 0–1): x=${c.rect.x.toFixed(3)} y=${c.rect.y.toFixed(3)} w=${c.rect.w.toFixed(3)} h=${c.rect.h.toFixed(3)}`
+                ? t(`Selected area (fraction 0–1): x=${c.rect.x.toFixed(3)} y=${c.rect.y.toFixed(3)} w=${c.rect.w.toFixed(3)} h=${c.rect.h.toFixed(3)}`, `Area selezionata (frazione 0–1): x=${c.rect.x.toFixed(3)} y=${c.rect.y.toFixed(3)} w=${c.rect.w.toFixed(3)} h=${c.rect.h.toFixed(3)}`)
                 : "",
             ]
               .filter(Boolean)
               .join(" · ");
-            text = `[Componente selezionato nella preview — ${ctx}]\n${text}`;
+            text = `${t(`[Component selected in the preview — ${ctx}]`, `[Componente selezionato nella preview — ${ctx}]`)}\n${text}`;
           }
         }
         text += attachmentsToText(message.attachments);

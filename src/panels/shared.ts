@@ -13,6 +13,7 @@ export function readAppSettings(): AppSettings {
   const cfg = vscode.workspace.getConfiguration("agentCode");
   return {
     userName: cfg.get<string>("userName", ""),
+    language: cfg.get<"auto" | "en" | "it">("language", "auto"),
     defaultMode: cfg.get<PermissionMode>("defaultMode", "bypassPermissions"),
     model: cfg.get<string>("model", ""),
     effort: (cfg.get<string>("effort", "") || "") as EffortLevel | "",

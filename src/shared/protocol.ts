@@ -214,6 +214,7 @@ export interface CodeNode {
 
 export interface AppSettings {
   userName: string;
+  language: "auto" | "en" | "it";
   defaultMode: PermissionMode;
   model: string;
   effort: EffortLevel | "";
@@ -290,8 +291,9 @@ export const EFFORT_OPTIONS: EffortLevel[] = ["low", "medium", "high", "xhigh", 
 // Extension -> Webview
 // ---------------------------------------------------------------------------
 export type HostMessage =
-  | { type: "init"; view: "dashboard"; state: DashboardState; media: string }
-  | { type: "init"; view: "design"; state: DesignState; media: string }
+  | { type: "init"; view: "dashboard"; state: DashboardState; media: string; lang?: "en" | "it" }
+  | { type: "init"; view: "design"; state: DesignState; media: string; lang?: "en" | "it" }
+  | { type: "lang/set"; lang: "en" | "it" }
   | { type: "dashboard/state"; state: DashboardState }
   | { type: "usage/update"; usage: UsageInfo }
   | { type: "agent/status"; status: AgentStatus }

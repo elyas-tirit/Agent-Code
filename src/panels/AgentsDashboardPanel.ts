@@ -4,9 +4,15 @@ import { ClientMessage, HostMessage } from "../shared/protocol";
 import { getWebviewHtml } from "./html";
 import { DesignWorkspacePanel } from "./DesignWorkspacePanel";
 import { readAppSettings, writeAppSettings } from "./shared";
+import { getHostLang, t } from "../i18n";
 
 export class AgentsDashboardPanel {
   private static current: AgentsDashboardPanel | undefined;
+
+  /** Push a language change to the open dashboard webview. */
+  static broadcastLang(lang: "en" | "it"): void {
+    AgentsDashboardPanel.current?.post({ type: "lang/set", lang });
+  }
   private readonly panel: vscode.WebviewPanel;
   private disposables: vscode.Disposable[] = [];
   private mediaUri = "";
@@ -19,7 +25,7 @@ export class AgentsDashboardPanel {
     }
     const panel = vscode.window.createWebviewPanel(
       "agentCode.dashboard",
-      "Agenti",
+      t("Agents", "Agenti"),
       column,
       {
         enableScripts: true,
@@ -69,6 +75,7 @@ export class AgentsDashboardPanel {
           view: "dashboard",
           state: this.manager.getDashboardState(),
           media: this.mediaUri,
+          lang: getHostLang(),
         });
         break;
       case "agent/new": {

@@ -1,4 +1,5 @@
 import { PermissionMode } from "../../shared/protocol";
+import { t } from "../../i18n";
 import {
   AgentBackend,
   AgentEvent,
@@ -50,7 +51,7 @@ class MockSession implements AgentSession {
     this.emit({ kind: "question-dismiss", id });
     this.emit({ kind: "status", status: "working" });
     const picked = Object.values(answers).join(", ") || "—";
-    const words = `Perfetto, procedo con: ${picked}. `.split(" ");
+    const words = t(`Got it, proceeding with: ${picked}. `, `Perfetto, procedo con: ${picked}. `).split(" ");
     words.forEach((w, i) => this.at(i * 70, () => this.emit({ kind: "text", delta: w + " " })));
     this.at(words.length * 70 + 200, () => this.finish());
   }
@@ -58,14 +59,14 @@ class MockSession implements AgentSession {
   respondPlan(id: string, approve: boolean): void {
     this.emit({ kind: "plan-dismiss", id });
     if (!approve) {
-      this.emit({ kind: "text", delta: "\nOk, continuo a pianificare." });
+      this.emit({ kind: "text", delta: t("\nOk, I'll keep planning.", "\nOk, continuo a pianificare.") });
       this.finish();
       return;
     }
     this.emit({ kind: "status", status: "working" });
     this.emit({ kind: "tool", tool: { id: "pe1", name: "Edit", summary: "src/pages/Home.tsx", state: "running", diff: { file: "src/pages/Home.tsx", before: "<div className=\"hero\">", after: "<div className=\"hero grid gap-6\">" } } });
     this.at(700, () => this.emit({ kind: "tool", tool: { id: "pe1", name: "Edit", summary: "src/pages/Home.tsx", state: "done", diff: { file: "src/pages/Home.tsx", before: "<div className=\"hero\">", after: "<div className=\"hero grid gap-6\">" } } }));
-    const words = "Eseguo il piano: ho allineato la griglia della hero. ".split(" ");
+    const words = t("Running the plan: I aligned the hero grid. ", "Eseguo il piano: ho allineato la griglia della hero. ").split(" ");
     words.forEach((w, i) => this.at(900 + i * 80, () => this.emit({ kind: "text", delta: w + " " })));
     this.at(900 + words.length * 80 + 200, () => this.finish());
   }
@@ -73,7 +74,7 @@ class MockSession implements AgentSession {
   respondPermission(id: string, decision: "allow" | "always" | "deny"): void {
     this.emit({ kind: "permission-dismiss", id });
     if (decision === "deny") {
-      this.emit({ kind: "text", delta: "\nOk, non eseguo il comando." });
+      this.emit({ kind: "text", delta: t("\nOk, I won't run the command.", "\nOk, non eseguo il comando.") });
       this.finish();
       return;
     }
@@ -82,7 +83,7 @@ class MockSession implements AgentSession {
     this.at(900, () =>
       this.emit({ kind: "tool", tool: { id: "t2", name: "Bash", summary: "npm test", state: "done" } }),
     );
-    const words = "Fatto. I test passano e ho aggiornato il componente come richiesto. ".split(" ");
+    const words = t("Done. The tests pass and I updated the component as requested. ", "Fatto. I test passano e ho aggiornato il componente come richiesto. ").split(" ");
     words.forEach((w, i) => this.at(1000 + i * 90, () => this.emit({ kind: "text", delta: w + " " })));
     this.at(1000 + words.length * 90 + 200, () => this.finish());
   }
@@ -102,7 +103,7 @@ class MockSession implements AgentSession {
 
   interrupt(): void {
     this.clear();
-    this.emit({ kind: "text", delta: "\n[interrotto]" });
+    this.emit({ kind: "text", delta: t("\n[interrupted]", "\n[interrotto]") });
     this.finish();
   }
 
@@ -146,14 +147,14 @@ class MockSession implements AgentSession {
       kind: "usage",
       usage: {
         percent: 9,
-        resetsInLabel: "Reset tra 3h",
+        resetsInLabel: t("Resets in 3h", "Reset tra 3h"),
         known: true,
         tokens: { input: 18420, output: 5234, cacheRead: 120400, cacheCreation: 8200, total: 23654, costUsd: 0.34 },
-        account: { authMethod: "Claude AI", email: "elyas.t@veliu.com", organization: "Veliu", plan: "Claude Team" },
+        account: { authMethod: "Claude AI", email: "you@example.com", organization: "Acme", plan: "Claude Team" },
         windows: [
-          { type: "five_hour", label: "Sessione (5 ore)", percent: 9, resetsInLabel: "Reset tra 3h", known: true },
-          { type: "seven_day", label: "Settimanale", percent: 34, resetsInLabel: "Reset tra 4g 6h", known: true },
-          { type: "seven_day_sonnet", label: "Settimanale · Sonnet", percent: 0, resetsInLabel: "", known: false, statusLabel: "Sotto i limiti" },
+          { type: "five_hour", label: t("Session (5 hours)", "Sessione (5 ore)"), percent: 9, resetsInLabel: t("Resets in 3h", "Reset tra 3h"), known: true },
+          { type: "seven_day", label: t("Weekly", "Settimanale"), percent: 34, resetsInLabel: t("Resets in 4d 6h", "Reset tra 4g 6h"), known: true },
+          { type: "seven_day_sonnet", label: t("Weekly · Sonnet", "Settimanale · Sonnet"), percent: 0, resetsInLabel: "", known: false, statusLabel: t("Within limits", "Sotto i limiti") },
         ],
       },
     });
@@ -168,13 +169,13 @@ class MockSession implements AgentSession {
             id: "q1",
             questions: [
               {
-                question: "Quale approccio preferisci per questa modifica?",
-                header: "Approccio",
+                question: t("Which approach do you prefer for this change?", "Quale approccio preferisci per questa modifica?"),
+                header: t("Approach", "Approccio"),
                 multiSelect: false,
                 options: [
-                  { label: "Minimale", description: "Cambia solo lo stretto necessario, basso rischio." },
-                  { label: "Refactor", description: "Riorganizza il componente per renderlo più pulito." },
-                  { label: "Riscrittura", description: "Ricostruisce il componente da zero seguendo il design." },
+                  { label: t("Minimal", "Minimale"), description: t("Change only what's strictly necessary, low risk.", "Cambia solo lo stretto necessario, basso rischio.") },
+                  { label: t("Refactor", "Refactor"), description: t("Reorganize the component to make it cleaner.", "Riorganizza il componente per renderlo più pulito.") },
+                  { label: t("Rewrite", "Riscrittura"), description: t("Rebuild the component from scratch following the design.", "Ricostruisce il componente da zero seguendo il design.") },
                 ],
               },
             ],
@@ -184,7 +185,7 @@ class MockSession implements AgentSession {
       return;
     }
 
-    const reasoning = "Analizzo la richiesta e preparo le modifiche. ".split(" ");
+    const reasoning = t("Analyzing the request and preparing the changes. ", "Analizzo la richiesta e preparo le modifiche. ").split(" ");
     reasoning.forEach((w, i) => this.at(i * 80, () => this.emit({ kind: "reasoning", delta: w + " " })));
 
     const t0 = reasoning.length * 80 + 200;
@@ -195,7 +196,7 @@ class MockSession implements AgentSession {
       this.emit({ kind: "tool", tool: { id: "t1", name: "Read", summary: "src/App.tsx", state: "done" } }),
     );
 
-    const intro = "Ho letto il file. Per procedere vorrei eseguire i test. ".split(" ");
+    const intro = t("I read the file. To proceed I'd like to run the tests. ", "Ho letto il file. Per procedere vorrei eseguire i test. ").split(" ");
     intro.forEach((w, i) => this.at(t0 + 800 + i * 80, () => this.emit({ kind: "text", delta: w + " " })));
 
     // In bypass mode there's no prompt; otherwise raise an approval request.
@@ -207,7 +208,7 @@ class MockSession implements AgentSession {
           kind: "plan",
           request: {
             id: "plan1",
-            plan: "## Piano\n\n1. Allineare la griglia della hero (CSS grid, gap 6)\n2. Rendere i bottoni full-width su mobile\n3. Aggiungere i test di layout\n\nProcedo?",
+            plan: t("## Plan\n\n1. Align the hero grid (CSS grid, gap 6)\n2. Make the buttons full-width on mobile\n3. Add the layout tests\n\nShall I proceed?", "## Piano\n\n1. Allineare la griglia della hero (CSS grid, gap 6)\n2. Rendere i bottoni full-width su mobile\n3. Aggiungere i test di layout\n\nProcedo?"),
           },
         });
       });
@@ -220,9 +221,9 @@ class MockSession implements AgentSession {
           kind: "permission",
           request: {
             id: "p1",
-            title: "Claude vuole eseguire: npm test",
-            displayName: "Esegui comando",
-            description: "Eseguirà il comando nella shell del progetto.",
+            title: t("Claude wants to run: npm test", "Claude vuole eseguire: npm test"),
+            displayName: t("Run command", "Esegui comando"),
+            description: t("It will run the command in the project shell.", "Eseguirà il comando nella shell del progetto."),
             toolName: "Bash",
             canAlwaysAllow: true,
           },

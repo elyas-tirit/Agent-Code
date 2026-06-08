@@ -1,51 +1,52 @@
-# Agent Code — installazione (per chi prova in anteprima)
+# Agent Code — install guide (for testers)
 
-**Agent Code** è una mod di VS Code per designer: una dashboard di agenti Claude Code
-visti come card + un workspace Preview/Design/Code con chat e "seleziona componente"
-stile Cursor. Si installa come **estensione** dentro il tuo VS Code (o Cursor/VSCodium).
+**Agent Code** is a designer-friendly VS Code mod: a dashboard of Claude Code agents as
+cards + a Preview/Design/Code workspace with a chat and a Cursor-style "select component"
+tool. It installs as an **extension** inside your VS Code (or Cursor / VSCodium).
 
-## Cosa ti serve
+## What you need
 
-1. **VS Code** (o Cursor / VSCodium) già installato. → https://code.visualstudio.com
-2. **Per gli agenti VERI**: **Claude Code** installato e loggato (serve un abbonamento Claude).
+1. **VS Code** (or Cursor / VSCodium) installed → https://code.visualstudio.com
+2. **For REAL agents**: [Claude Code](https://docs.claude.com/claude-code) installed and
+   logged in (a Claude subscription).
    ```bash
-   npm install -g @anthropic-ai/claude-code   # installa la CLI `claude`
-   claude                                      # avvia e fai il login una volta
+   npm install -g @anthropic-ai/claude-code   # installs the `claude` CLI
+   claude                                      # run it once and log in
    ```
-   Senza Claude Code l'app parte lo stesso in **modalità demo (simulata)**: vedi l'interfaccia
-   e finti agenti, ma le risposte non sono reali. Te lo segnala chiaramente in alto.
+   Without Claude Code the app still starts in **demo mode (simulated)**: you see the UI
+   and fake agents, but the answers aren't real. It tells you so clearly at the top.
 
-## Installazione (modo facile, macOS/Linux)
+## Install (easy way, macOS / Linux)
 
-Apri il Terminale nella cartella che hai ricevuto ed esegui:
+Open a terminal in the folder you received and run:
 
 ```bash
 ./install.sh
 ```
 
-Trova da solo VS Code/Cursor e installa l'estensione. Poi **riavvia VS Code**.
+It finds VS Code / Cursor on its own and installs the extension. Then **restart VS Code**.
 
-## Installazione (manuale, qualsiasi OS)
+## Install (manual, any OS)
 
-1. Apri VS Code.
-2. `Cmd/Ctrl + Shift + P` → digita **"Install from VSIX"** → invio.
-3. Scegli il file **`agent-code.vsix`**.
-4. **Riavvia VS Code** (o `Developer: Reload Window`).
+1. Open VS Code.
+2. `Cmd/Ctrl + Shift + P` → type **"Install from VSIX"** → Enter.
+3. Choose the **`agent-code.vsix`** file.
+4. **Restart VS Code** (or run `Developer: Reload Window`).
 
-## Come si usa
+## Using it
 
-- Dopo il riavvio la **dashboard Agenti si apre da sola**. Se non lo fa:
+- After restarting, the **Agents dashboard opens automatically**. If it doesn't:
   `Cmd/Ctrl + Shift + P` → **"Agent Code: Open Agents Dashboard"**.
-- "Avvia nuovo agente" crea una conversazione; il workspace Design ha la **preview live**
-  con il dev server (imposta l'URL, default `http://localhost:3000`) e il pulsante
-  **Seleziona** per indicare un componente all'agente.
+- "New agent" starts a conversation; the Design workspace has a **live preview** of your
+  dev server (set the URL, default `http://localhost:3000`) and a **Select** button to
+  point the agent at a component.
+- Language follows your VS Code locale by default — switch English/Italian in Settings.
 
-## Disinstallare
+## Uninstall
 
-VS Code → pannello Estensioni → cerca **Agent Code** → ingranaggio → **Uninstall**.
+VS Code → Extensions panel → search **Agent Code** → gear icon → **Uninstall**.
 
 ---
 
-*Nota: l'estensione è ~70MB perché include l'SDK di Claude. È firmata come publisher
-`veliu` ma non pubblicata sul Marketplace — è normale che VS Code chieda conferma per un
-VSIX locale.*
+*Note: the extension is ~70MB because it bundles the Claude SDK. It isn't published on the
+Marketplace, so VS Code asks you to confirm installing a local VSIX — that's expected.*

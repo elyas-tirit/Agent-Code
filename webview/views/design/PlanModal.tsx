@@ -3,6 +3,7 @@ import type { PlanRequest } from "@shared/protocol";
 import { Icon } from "../../ui/Icon";
 import { Md } from "../../ui/Markdown";
 import { FloatingPanel } from "../../ui/FloatingPanel";
+import { t } from "../../i18n";
 
 interface PlanModalProps {
   request: PlanRequest;
@@ -28,7 +29,7 @@ export function PlanModal({ request, onRespond, onMinimize }: PlanModalProps) {
   }, [request, onRespond]);
 
   return (
-    <FloatingPanel title="Piano proposto" icon="list-checks" accent="#70ff8b" width={560} onMinimize={onMinimize}>
+    <FloatingPanel title={t("Proposed plan", "Piano proposto")} icon="list-checks" accent="#70ff8b" width={560} onMinimize={onMinimize}>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 text-[13px] leading-relaxed text-white/85">
         <Md text={request.plan} />
       </div>
@@ -38,14 +39,14 @@ export function PlanModal({ request, onRespond, onMinimize }: PlanModalProps) {
           className="flex h-10 w-full items-center justify-center gap-2 rounded-lg text-[14px] font-medium text-black"
           style={{ background: "linear-gradient(90deg,#70fff3 0%,#70ff8b 100%)" }}
         >
-          <Icon name="play-circle" size={16} /> Approva ed esegui
+          <Icon name="play-circle" size={16} /> {t("Approve and run", "Approva ed esegui")}
           <span className="ml-1 rounded border border-black/20 bg-black/10 px-1.5 text-[11px]">⌘↵</span>
         </button>
         <button
           onClick={() => onRespond(false)}
           className="h-10 w-full rounded-lg bg-white/8 text-[13px] text-white/80 hover:bg-white/12"
         >
-          Continua a pianificare
+          {t("Keep planning", "Continua a pianificare")}
         </button>
       </div>
     </FloatingPanel>

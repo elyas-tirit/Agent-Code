@@ -17,6 +17,7 @@ import { AgentBackend, AgentSession, SpawnOptions } from "./types";
 import { MockBackend } from "./backends/MockBackend";
 import { ClaudeAgentBackend, ClaudeBackendConfig } from "./backends/ClaudeAgentBackend";
 import { addUserMessage, applyAgentEvent } from "./transcript";
+import { t } from "../i18n";
 
 export type BackendChoice = "auto" | "mock" | "claude";
 type ChangeListener = (state: DashboardState) => void;
@@ -53,14 +54,14 @@ function labelForStatus(status: AgentStatus): string {
   switch (status) {
     case "ready":
     case "idle":
-      return "In attesa di ordini";
+      return t("Awaiting orders", "In attesa di ordini");
     case "working":
-      return "Sta lavorando";
+      return t("Working", "Sta lavorando");
     case "awaiting-approval":
     case "asking":
       return "Human Request";
     case "error":
-      return "Errore";
+      return t("Error", "Errore");
   }
 }
 
@@ -69,19 +70,19 @@ function actionsForStatus(status: AgentStatus): AgentAction[] {
     case "awaiting-approval":
     case "asking":
       return [
-        { id: "controlla", label: "Controlla", kind: "primary" },
-        { id: "autonomo", label: "Autonomo", kind: "secondary" },
+        { id: "controlla", label: t("Review", "Controlla"), kind: "primary" },
+        { id: "autonomo", label: t("Autonomous", "Autonomo"), kind: "secondary" },
       ];
     case "working":
       return [];
     case "error":
       return [
-        { id: "apri", label: "Riapri", kind: "primary" },
-        { id: "fire-agent", label: "Elimina", kind: "secondary" },
+        { id: "apri", label: t("Reopen", "Riapri"), kind: "primary" },
+        { id: "fire-agent", label: t("Delete", "Elimina"), kind: "secondary" },
       ];
     default:
       return [
-        { id: "apri", label: "Nuovi ordini", kind: "primary" },
+        { id: "apri", label: t("New orders", "Nuovi ordini"), kind: "primary" },
         { id: "fire-agent", label: "Fire Agent", kind: "secondary" },
       ];
   }
@@ -153,9 +154,9 @@ export class AgentManager {
   // --- greeting --------------------------------------------------------------
   private hourGreeting(): string {
     const h = new Date().getHours();
-    if (h < 12) return "Buongiorno";
-    if (h < 18) return "Buon pomeriggio";
-    return "Buonasera";
+    if (h < 12) return t("Good morning", "Buongiorno");
+    if (h < 18) return t("Good afternoon", "Buon pomeriggio");
+    return t("Good evening", "Buonasera");
   }
   get greeting(): string {
     return this.userName ? `${this.hourGreeting()}, ${this.userName}` : this.hourGreeting();
@@ -171,6 +172,10 @@ export class AgentManager {
   private notify(): void {
     const state = this.getDashboardState();
     for (const l of this.listeners) l(state);
+  }
+  /** Re-emit dashboard state (e.g. after a language change relabels cards/greeting). */
+  refresh(): void {
+    this.notify();
   }
   onAttention(cb: (info: { agentId: string; name: string; message: string }) => void): () => void {
     this.attention.push(cb);
@@ -283,24 +288,24 @@ export class AgentManager {
           break;
         case "permission":
           this.setCardStatus(c, "awaiting-approval");
-          c.description = `Vuole: ${event.request.displayName ?? event.request.toolName}`;
-          this.notifyAttention(agentId, c.name, `Approvazione: ${event.request.displayName ?? event.request.toolName}`);
+          c.description = t(`Wants: ${event.request.displayName ?? event.request.toolName}`, `Vuole: ${event.request.displayName ?? event.request.toolName}`);
+          this.notifyAttention(agentId, c.name, t(`Approval: ${event.request.displayName ?? event.request.toolName}`, `Approvazione: ${event.request.displayName ?? event.request.toolName}`));
           break;
         case "permission-dismiss":
           if (c.status === "awaiting-approval") this.setCardStatus(c, "working");
           break;
         case "question":
           this.setCardStatus(c, "asking");
-          c.description = event.request.questions[0]?.question ?? "Ha una domanda per te";
-          this.notifyAttention(agentId, c.name, event.request.questions[0]?.question ?? "Ti sta facendo una domanda");
+          c.description = event.request.questions[0]?.question ?? t("Has a question for you", "Ha una domanda per te");
+          this.notifyAttention(agentId, c.name, event.request.questions[0]?.question ?? t("Is asking you a question", "Ti sta facendo una domanda"));
           break;
         case "question-dismiss":
           if (c.status === "asking") this.setCardStatus(c, "working");
           break;
         case "plan":
           this.setCardStatus(c, "awaiting-approval");
-          c.description = "Piano pronto — attende la tua approvazione";
-          this.notifyAttention(agentId, c.name, "Ha un piano da approvare");
+          c.description = t("Plan ready — awaiting your approval", "Piano pronto — attende la tua approvazione");
+          this.notifyAttention(agentId, c.name, t("Has a plan to approve", "Ha un piano da approvare"));
           break;
         case "plan-dismiss":
           if (c.status === "awaiting-approval") this.setCardStatus(c, "working");
@@ -332,11 +337,11 @@ export class AgentManager {
   // --- agent lifecycle -------------------------------------------------------
   async newAgent(prompt?: string): Promise<string> {
     const agentId = newAgentId();
-    const session = await this.backend.spawn({ name: "Nuova conversazione", prompt, cwd: this.cwd });
+    const session = await this.backend.spawn({ name: t("New conversation", "Nuova conversazione"), prompt, cwd: this.cwd });
     const status: AgentStatus = prompt ? "working" : "ready";
     this.cards.set(agentId, {
       id: agentId,
-      name: "Nuova conversazione",
+      name: t("New conversation", "Nuova conversazione"),
       status,
       statusLabel: labelForStatus(status),
       accent: accentForStatus(status),
@@ -438,9 +443,9 @@ export class AgentManager {
   /** Seed a few mock conversations so the dashboard isn't empty in demo mode. */
   async seedDemo(): Promise<void> {
     await this.newAgent();
-    await this.newAgent("Sistema il layout della homepage");
-    await this.newAgent("Aggiungi la validazione al form di checkout");
-    await this.newAgent("Refactor del modulo di autenticazione");
+    await this.newAgent(t("Fix the homepage layout", "Sistema il layout della homepage"));
+    await this.newAgent(t("Add validation to the checkout form", "Aggiungi la validazione al form di checkout"));
+    await this.newAgent(t("Refactor the authentication module", "Refactor del modulo di autenticazione"));
     this.notify();
   }
 }

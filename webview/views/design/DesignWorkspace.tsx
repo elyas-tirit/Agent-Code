@@ -10,6 +10,7 @@ import type {
   SelectedComponent,
 } from "@shared/protocol";
 import { onHostMessage, post } from "../../vscode";
+import { t } from "../../i18n";
 import { SessionBadge } from "../dashboard/TopBar";
 import { Icon, IconName } from "../../ui/Icon";
 import { MinimizedChip } from "../../ui/FloatingPanel";
@@ -27,7 +28,7 @@ const MODES: DesignMode[] = ["preview", "design", "code"];
 const MODE_LABEL: Record<DesignMode, string> = { preview: "Preview", design: "Design", code: "Code" };
 
 const EMPTY: DesignState = {
-  title: "Nuova conversazione",
+  title: t("New conversation", "Nuova conversazione"),
   status: "ready",
   mode: "bypassPermissions",
   designMode: "design",
@@ -259,7 +260,7 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
           onClick={() => post({ type: "nav/back" })}
           className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[14px] text-white/70 transition-colors hover:bg-white/5 hover:text-white"
         >
-          <Icon name="arrow-left" size={16} /> Agenti
+          <Icon name="arrow-left" size={16} /> {t("Agents", "Agenti")}
         </button>
         <div className="absolute left-1/2 -translate-x-1/2">
           <SegmentedControl
@@ -271,7 +272,7 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
             }}
           />
         </div>
-        <button onClick={() => setUsageOpen(true)} title="Vedi l'uso della sessione">
+        <button onClick={() => setUsageOpen(true)} title={t("View session usage", "Vedi l'uso della sessione")}>
           <SessionBadge usage={state.usage} />
         </button>
       </div>
@@ -287,7 +288,7 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
         {collapsed && (
           <button
             onClick={() => setPreviewCollapsed(false)}
-            title="Mostra la preview"
+            title={t("Show the preview", "Mostra la preview")}
             className="ac-fade-in mr-2 flex shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-2 py-4 text-white/55 transition-colors hover:border-[#70fff3]/40 hover:text-white"
           >
             <Icon name="panel-left" size={16} />
@@ -302,7 +303,7 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
               <div
                 onMouseDown={startDrag}
                 className="group relative mx-1 flex w-2 cursor-col-resize items-center justify-center"
-                title="Trascina per ridimensionare"
+                title={t("Drag to resize", "Trascina per ridimensionare")}
               >
                 <div className="h-14 w-[3px] rounded-full bg-white/10 transition-colors group-hover:bg-[#70fff3]/70" />
               </div>
@@ -385,11 +386,11 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
         {(() => {
           const chips: { id: string; label: string; icon: IconName; accent: string; restore: () => void }[] = [];
           if (pending && minimized.has(pending.id))
-            chips.push({ id: pending.id, label: "Approvazione", icon: "shield", accent: "#4067e8", restore: () => unmini(pending.id) });
+            chips.push({ id: pending.id, label: t("Approval", "Approvazione"), icon: "shield", accent: "#4067e8", restore: () => unmini(pending.id) });
           if (question && minimized.has(question.id))
-            chips.push({ id: question.id, label: "Domanda", icon: "hand", accent: "#70fff3", restore: () => unmini(question.id) });
+            chips.push({ id: question.id, label: t("Question", "Domanda"), icon: "hand", accent: "#70fff3", restore: () => unmini(question.id) });
           if (plan && minimized.has(plan.id))
-            chips.push({ id: plan.id, label: "Piano", icon: "list-checks", accent: "#70ff8b", restore: () => unmini(plan.id) });
+            chips.push({ id: plan.id, label: t("Plan", "Piano"), icon: "list-checks", accent: "#70ff8b", restore: () => unmini(plan.id) });
           return chips.map((c, i) => (
             <MinimizedChip key={c.id} index={i} label={c.label} icon={c.icon} accent={c.accent} onRestore={c.restore} />
           ));
@@ -397,8 +398,8 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
         {usageOpen && (
           <UsageModal
             usage={state.usage}
-            title="Uso della sessione"
-            scope="Token e limiti consumati da questa conversazione, sul tuo abbonamento Claude."
+            title={t("Session usage", "Uso della sessione")}
+            scope={t("Tokens and limits consumed by this conversation, on your Claude subscription.", "Token e limiti consumati da questa conversazione, sul tuo abbonamento Claude.")}
             position="absolute"
             onClose={() => setUsageOpen(false)}
           />

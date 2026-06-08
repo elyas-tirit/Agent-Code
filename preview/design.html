@@ -36,7 +36,7 @@
       const designMode = qp.get("designMode") || "design";
       const tokens = { input: 18420, output: 5234, cacheRead: 120400, cacheCreation: 8200, total: 23654, costUsd: 0.34 };
       const known = qp.get("noPct") !== "1";
-      const account = { authMethod: "Claude AI", email: "elyas.t@veliu.com", organization: "Veliu", plan: "Claude Team" };
+      const account = { authMethod: "Claude AI", email: "you@example.com", organization: "Acme", plan: "Claude Team" };
       const question = qp.get("q")
         ? {
             id: "q1",
@@ -55,6 +55,7 @@
           }
         : undefined;
       window.__AGENT_CODE__ = {
+        lang: qp.get("lang") || "en",
         view: "design",
         media: "/dist/webview/media",
         state: {
@@ -79,11 +80,11 @@
               id: "a1",
               role: "assistant",
               reasoning: "Leggo il componente, applico le modifiche al layout e lancio la build per verificare.",
-              text: "Ho aggiornato il layout della homepage. Ecco **cosa ho fatto**:\n\n## Modifiche\n1. Allineato la griglia della hero (`grid gap-6`)\n2. Bottoni `full-width` su mobile\n3. Aggiunto i test di layout\n\n> Nota: ho mantenuto i contenuti esistenti.\n\n| File | Stato |\n|------|-------|\n| `Home.tsx` | ✅ |\n| `Hero.tsx` | ✅ |\n\n```tsx\n<div className=\"hero grid gap-6\">\n  <h1 className=\"text-5xl\">Veliu</h1>\n</div>\n```\n\nProcedo con il resto?",
+              text: "I've updated the homepage layout. Here's **what I did**:\n\n## Changes\n1. Aligned the hero grid (`grid gap-6`)\n2. Buttons `full-width` on mobile\n3. Added layout tests\n\n> Note: I kept the existing content.\n\n| File | Status |\n|------|-------|\n| `Home.tsx` | ✅ |\n| `Hero.tsx` | ✅ |\n\n```tsx\n<div className=\"hero grid gap-6\">\n  <h1 className=\"text-5xl\">Acme</h1>\n</div>\n```\n\nShall I continue with the rest?",
               streaming: status === "working",
               tools: [
                 { id: "t1", name: "Read", summary: "src/pages/Home.tsx", state: "done" },
-                { id: "t2", name: "Edit", summary: "src/pages/Home.tsx", state: "done", diff: { file: "src/pages/Home.tsx", before: "<div className=\"hero\">\n  <h1>Veliu</h1>", after: "<div className=\"hero grid gap-6\">\n  <h1 className=\"text-5xl\">Veliu</h1>" } },
+                { id: "t2", name: "Edit", summary: "src/pages/Home.tsx", state: "done", diff: { file: "src/pages/Home.tsx", before: "<div className=\"hero\">\n  <h1>Acme</h1>", after: "<div className=\"hero grid gap-6\">\n  <h1 className=\"text-5xl\">Acme</h1>" } },
                 { id: "t3", name: "Bash", summary: "npm run build", state: status === "working" ? "running" : "done" },
               ],
             },

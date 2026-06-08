@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { QuestionAnswers, QuestionItem, QuestionRequest } from "@shared/protocol";
 import { Icon } from "../../ui/Icon";
 import { FloatingPanel } from "../../ui/FloatingPanel";
+import { t } from "../../i18n";
 
 interface QuestionModalProps {
   request: QuestionRequest;
@@ -83,7 +84,7 @@ function QuestionBlock({
         <span className="rounded-md bg-[#4067e8]/20 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#9db4ff]">
           {q.header}
         </span>
-        {q.multiSelect && <span className="text-[11px] text-white/40">selezione multipla</span>}
+        {q.multiSelect && <span className="text-[11px] text-white/40">{t("multiple selection", "selezione multipla")}</span>}
       </div>
       <p className="mb-3 text-[15px] font-medium leading-snug text-white">{q.question}</p>
 
@@ -116,7 +117,7 @@ function QuestionBlock({
           <input
             value={state.other}
             onChange={(e) => onOther(e.target.value)}
-            placeholder="Altro… (scrivi la tua risposta)"
+            placeholder={t("Other… (write your answer)", "Altro… (scrivi la tua risposta)")}
             className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/35"
           />
         </div>
@@ -183,7 +184,7 @@ export function QuestionModal({ request, onRespond, onMinimize }: QuestionModalP
   });
 
   return (
-    <FloatingPanel title="Claude ha una domanda" icon="hand" accent="#70fff3" width={560} onMinimize={onMinimize}>
+    <FloatingPanel title={t("Claude has a question", "Claude ha una domanda")} icon="hand" accent="#70fff3" width={560} onMinimize={onMinimize}>
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 pb-5 pt-1">
         {request.questions.map((q, i) => (
           <QuestionBlock
@@ -199,8 +200,8 @@ export function QuestionModal({ request, onRespond, onMinimize }: QuestionModalP
       <div className="flex items-center justify-between gap-3 border-t border-white/10 px-5 py-3.5">
         <span className="text-[11.5px] text-white/35">
           {request.questions[0]?.options.length
-            ? "Usa 1–" + request.questions[0].options.length + " · Invio per confermare"
-            : "Invio per confermare"}
+            ? t(`Use 1–${request.questions[0].options.length} · Enter to confirm`, `Usa 1–${request.questions[0].options.length} · Invio per confermare`)
+            : t("Enter to confirm", "Invio per confermare")}
         </span>
         <button
           onClick={submit}
@@ -211,7 +212,7 @@ export function QuestionModal({ request, onRespond, onMinimize }: QuestionModalP
               : "cursor-not-allowed bg-white/10 text-white/40"
           }`}
         >
-          Conferma <Icon name="arrow-up" size={15} className="rotate-90" />
+          {t("Confirm", "Conferma")} <Icon name="arrow-up" size={15} className="rotate-90" />
         </button>
       </div>
     </FloatingPanel>

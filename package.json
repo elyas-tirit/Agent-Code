@@ -3,7 +3,8 @@
   "displayName": "Agent Code",
   "description": "Designer-friendly VS Code mod: multi-agent dashboard + Design/Preview/Code workspace, powered by the Claude Agent SDK.",
   "version": "0.0.1",
-  "publisher": "veliu",
+  "publisher": "elyas-tirit",
+  "author": "Elyas Tirit",
   "license": "MIT",
   "icon": "media/icon.png",
   "private": false,
@@ -59,6 +60,16 @@
           "type": "boolean",
           "default": true,
           "description": "Open the Agents dashboard automatically when VS Code starts."
+        },
+        "agentCode.language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "en",
+            "it"
+          ],
+          "default": "auto",
+          "description": "UI language. 'auto' follows VS Code's display language (Italian if the editor is in Italian, otherwise English)."
         },
         "agentCode.backend": {
           "type": "string",

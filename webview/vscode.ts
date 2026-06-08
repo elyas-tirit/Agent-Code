@@ -8,7 +8,7 @@ interface VsCodeApi {
 
 declare global {
   interface Window {
-    __AGENT_CODE__?: { view: WebviewView; state: unknown; media?: string };
+    __AGENT_CODE__?: { view: WebviewView; state: unknown; media?: string; lang?: "en" | "it" };
     acquireVsCodeApi?: () => VsCodeApi;
   }
 }
@@ -20,6 +20,9 @@ export const bootstrap = window.__AGENT_CODE__ ?? {
   state: undefined,
   media: "",
 };
+
+/** Initial UI language resolved by the host ("en" | "it"). */
+export const LANG: "en" | "it" = bootstrap.lang === "it" ? "it" : "en";
 
 /** Base webview URI of dist/webview/media (robot avatar, bg video, …). */
 export const MEDIA = (bootstrap.media ?? "").replace(/\/$/, "");

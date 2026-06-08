@@ -1,127 +1,131 @@
+<div align="center">
+
 # Agent Code
 
-Una "mod" di VS Code pensata per designer: una **dashboard multi-agente** e un
-**workspace Preview / Design / Code** con select-component → AI, costruiti come
-estensione VS Code + UI in webview. Mantiene tutte le funzioni di VS Code perché
-ci vive dentro.
+**A designer-friendly VS Code mod: a multi-agent dashboard and a Preview / Design / Code
+workspace, powered by real Claude Code.**
 
-## Stack
+Free &amp; open source · MIT · English / Italiano
 
-- **Extension host**: TypeScript, bundle con esbuild → `dist/extension.js`
-- **Webview UI**: React 18 + Vite + Tailwind v4 → `dist/webview/`
-- **Agenti**: [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)
-  dietro un'interfaccia `AgentBackend`, con un **MockBackend** di fallback così la
-  UI funziona anche senza API key.
+</div>
 
-Scelta architetturale: *extension-first*. Tutta la logica vive in un'estensione
-auto-contenuta; un eventuale *fork sottile* di VS Code (per la chrome custom)
-riuserà la stessa estensione senza riscrivere nulla.
+Agent Code turns VS Code into a calmer, designer-first surface without taking any of its
+power away — because it *lives inside* VS Code. The agents and the chat are **real Claude
+Code** (via the [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)),
+driving your existing logged-in `claude` CLI, so it reuses your Claude subscription with
+no extra API key.
 
-## Come si lancia
+> Two surfaces, one extension:
+> - **Agents dashboard** — your Claude Code multi-agents as status cards.
+> - **Preview / Design / Code workspace** — a live preview, a chat with the agent, a
+>   Cursor-style component picker, and a green-accented mini-IDE that can hand selected
+>   code straight to the AI.
+
+## Features
+
+- **Real Claude Code chat** — streaming with **Markdown** rendering, inline **diffs** for
+  edits, **approval** prompts, **AskUserQuestion** modals, **Plan mode**, `@`-mention of
+  workspace files, image attachments (drag-drop / paste) and **Figma** (via MCP).
+- **Live preview + Cursor-style picker** — hover-highlight any element and send its React
+  component + source `file:line` to the agent. Works **cross-origin out of the box** via a
+  tiny local reverse proxy (no snippet to add to your app).
+- **Per-component AI panel** — pick a component to open a focused prompt panel (Edit /
+  Prompt / Builder) that references the element's classes and source.
+- **Mini-IDE Code view** — file tree, multi-tab editor, syntax highlighting, and
+  **select code → ask the AI**: drag a line range and attach the exact snippet to chat.
+- **Movable, minimizable modals** — drag approval/question/plan panels aside, minimize and
+  reopen them, all without blocking the preview.
+- **Real usage** — session tokens/cost, 5-hour & weekly windows, and account info.
+- **OS notifications** when an agent needs you (only while the window isn't focused).
+- **Persistence + resume** — agents and conversations survive reloads/restarts; reopening
+  resumes the Claude session with full context.
+- **English / Italian** — `auto` follows your VS Code language; switch any time in Settings.
+
+## Requirements
+
+- **VS Code** 1.96+ (or Cursor / VSCodium).
+- For **real agents**: [Claude Code](https://docs.claude.com/claude-code) installed and
+  logged in (a Claude subscription). Without it, Agent Code runs in a **simulated demo
+  mode** so you can explore the UI — it tells you clearly when it does.
+
+> No `ANTHROPIC_API_KEY` needed — Agent Code drives your logged-in `claude` CLI, so it uses
+> your subscription, not pay-as-you-go billing.
+
+## Install
+
+**From a packaged build (`.vsix`):**
+
+```bash
+code --install-extension agent-code.vsix
+# or in VS Code: Cmd/Ctrl+Shift+P → "Install from VSIX"
+```
+
+Then reload VS Code — the Agents dashboard opens on startup. See [INSTALL.md](INSTALL.md)
+for a step-by-step guide (and a one-command `scripts/install.sh`).
+
+**From source:**
 
 ```bash
 npm install
-npm run build      # build webview + extension
+npm run build        # builds the webview + the extension
+# then press F5 in VS Code → "Run Agent Code (Extension)"
+npm run package      # → agent-code.vsix
 ```
 
-Poi in VS Code premi **F5** ("Run Agent Code (Extension)"): si apre un Extension
-Development Host con la dashboard Agenti. Comandi disponibili (⇧⌘P):
+Dev loop: `npm run watch` (esbuild + Vite in watch) · checks: `npm run typecheck`,
+`npm test`.
 
-- `Agent Code: Open Agents Dashboard`
-- `Agent Code: Open Design Workspace`
-- `Agent Code: New Agent`
+## Commands
 
-Sviluppo con hot rebuild:
+`Cmd/Ctrl+Shift+P`:
 
-```bash
-npm run watch      # esbuild + vite in watch
-```
+- **Agent Code: Open Agents Dashboard**
+- **Agent Code: Open Design Workspace**
+- **Agent Code: New Agent**
+- **Agent Code: Immersive Mode** (⌘⌥I / Ctrl+Alt+I — Zen full-screen)
 
-## Backend agenti
+## Settings (`agentCode.*`)
 
-Di default gira in **mock** (sessioni simulate). Per agenti Claude reali:
-
-```bash
-npm install @anthropic-ai/claude-agent-sdk
-export ANTHROPIC_API_KEY=...      # oppure CLAUDE_CODE_OAUTH_TOKEN
-```
-
-e imposta `agentCode.backend` su `auto` o `claude` nelle settings. Il SDK è
-caricato dinamicamente: se manca, si torna automaticamente al mock.
-
-## Impostazioni
-
-| Setting | Default | Descrizione |
+| Setting | Default | Description |
 |---|---|---|
-| `agentCode.openDashboardOnStartup` | `true` | Apre la dashboard all'avvio |
-| `agentCode.backend` | `auto` | `auto` \| `mock` \| `claude` |
-| `agentCode.previewUrl` | `http://localhost:3000` | URL del dev server nella Design view |
+| `language` | `auto` | UI language: `auto` (VS Code locale) · `en` · `it` |
+| `openDashboardOnStartup` | `true` | Open the Agents dashboard on startup |
+| `backend` | `auto` | `auto` (real Claude if available, else mock) · `mock` · `claude` |
+| `defaultMode` | `bypassPermissions` | Permission mode new agents start in |
+| `model` / `effort` | — | Default model / reasoning effort for new agents |
+| `previewUrl` | `http://localhost:3000` | Dev-server URL shown in the Design preview |
+| `figmaMcpUrl` | `http://127.0.0.1:3845/sse` | Figma Dev-Mode MCP server (attach Figma frames) |
+| `fullAccess` | `true` | Max capability (no sandbox, reach your home dir) — turn off to lock down |
 
-## Struttura
+## Architecture
+
+**Extension-first.** All the logic lives in a self-contained VS Code extension; an
+optional [thin fork of VS Code](fork/) (for custom chrome) reuses the same extension.
 
 ```
 src/
-  extension.ts              attivazione + comandi
-  agents/
-    AgentManager.ts         orchestrazione card + eventi
-    types.ts                AgentBackend / AgentSession
-    backends/
-      MockBackend.ts        sessioni simulate
-      ClaudeAgentBackend.ts Claude Agent SDK (streaming-input multi-turno)
-  panels/
-    AgentsDashboardPanel.ts webview Frame 1
-    DesignWorkspacePanel.ts webview Frame 2
-    html.ts                 HTML + CSP + nonce
-  shared/protocol.ts        messaggi tipizzati ext <-> webview
-webview/
-  views/dashboard/          Agenti (rail, top bar, card)
-  views/design/             Preview/Design/Code + chat
-  ui/                       Icon, Avatar, Pill
-preview/                    harness per screenshot di verifica (fuori dal pacchetto)
+  extension.ts            activation, commands, persistence, language
+  i18n.ts                 host-side t("en","it")
+  agents/                 AgentManager + AgentBackend (Claude SDK / Mock)
+  panels/                 the two webview panels + CSP html
+  preview/PreviewProxy.ts local reverse proxy that injects the picker cross-origin
+  shared/protocol.ts      typed messages between host and webview
+webview/                  React 18 + Vite + Tailwind v4 UI
+  i18n.ts                 webview-side t("en","it")
+  views/dashboard/        the Agents dashboard
+  views/design/           Preview / Design / Code + chat
+preview/                  headless screenshot harnesses (not shipped)
 ```
 
-## Verifica visiva
+- **Host**: TypeScript bundled with esbuild → `dist/extension.js`.
+- **Webview**: React + Vite + Tailwind → `dist/webview/`.
 
-`preview/dashboard.html` e `preview/design.html` caricano il bundle con stato
-mock: utili per confrontare la UI con i Figma in un browser senza lanciare
-l'Extension Host.
+## Contributing
 
-```bash
-python3 -m http.server 8099        # poi apri /preview/dashboard.html
-```
+Issues and PRs welcome. Keep `npm run typecheck`, `npm run build`, and `npm test` green.
+UI strings are inline-translated with `t("English", "Italiano")` — add both languages when
+you add copy. See [CLAUDE.md](CLAUDE.md) for an architecture-oriented overview.
 
-## Selezione componenti nella preview
+## License
 
-Il pulsante **Seleziona** (modalità Design) usa un *element picker* che evidenzia
-l'elemento sotto il cursore (stroke) e cattura `tag` / testo / selettore CSS da
-mandare all'agente.
-
-- Se la preview è **same-origin**, il picker viene **iniettato automaticamente**.
-- I dev server su `localhost` sono **cross-origin** rispetto al webview, quindi il
-  browser non permette di leggerne il DOM. Per abilitare il picker preciso, in
-  sviluppo aggiungi alla tua app lo snippet [`media/picker.js`](media/picker.js)
-  (es. `<script src="/picker.js"></script>` servito dalla tua app). Senza snippet
-  resta il fallback "selezione ad area".
-
-## Persistenza
-
-Agenti e conversazioni sono salvati nel `globalState` di VS Code: sopravvivono a
-chiusura tab, reload e riavvio. Gli agenti ripristinati sono **dormienti** (nessun
-processo attivo) finché non li riapri/scrivi; alla prima interazione la sessione
-viene **ripresa** (`resume` dell'SDK) così Claude continua col contesto pieno.
-
-## Funzionalità
-
-- **Dashboard Agenti** — card di stato (In attesa di ordini / Sta lavorando / Human Request), ordinate per "serve la tua attenzione", video di sfondo, settings, animazioni.
-- **Chat = Claude Code reale** — streaming, tool con **diff** inline, **approvazioni**, **AskUserQuestion** (modal), **Plan mode** (ExitPlanMode → approva/continua), `@`-mention dei file, allega **immagini** (drag-drop/paste/picker) e **Figma** (via MCP), mode (Ask/Plan/Edit/Auto), model/thinking/effort.
-- **Preview/Design/Code** — preview live, **select component stile Cursor** (hover stroke + componente React + sorgente), device picker, fullscreen reale, Code view con alberatura, splitter trascinabile.
-- **Usage reale** — token/costo di sessione + finestre 5h/settimanale + account, nel badge e nel modal.
-- **Notifiche OS** quando un agente serve la tua attenzione (a finestra non a fuoco).
-
-## Roadmap
-
-- [x] **Fase 1** — Dashboard + workspace fedeli ai Figma, Claude Agent SDK
-- [x] **Fase 2 (UX)** — modali, allegati reali, usage reale, mode/effort/model, device picker, fullscreen, Code view, splitter, video, animazioni
-- [x] **Fase 2.1** — picker stile Cursor (componente React + sorgente), Plan mode, diff UI, mention, notifiche OS, Figma MCP, **persistenza + resume**, `.vsix`
-- [ ] **Fase 3** — fork sottile di VS Code per la chrome custom (scaffold in [fork/](fork/); la compilazione gira in locale)
-- [ ] **Futuro** — picker cross-origin out-of-the-box, mapping `file:line`, compressione video, sync multi-device
+[MIT](LICENSE) © Elyas Tirit

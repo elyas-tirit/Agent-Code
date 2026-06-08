@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FigmaGlyph, Icon } from "./Icon";
+import { t } from "../i18n";
 
 /** A polished modal to attach a Figma frame by URL (replaces a plain host input box). */
 export function FigmaModal({ onSubmit, onClose }: { onSubmit: (url: string) => void; onClose: () => void }) {
@@ -35,10 +36,9 @@ export function FigmaModal({ onSubmit, onClose }: { onSubmit: (url: string) => v
           <span className="ac-float flex size-14 items-center justify-center rounded-2xl bg-black/50 ring-1 ring-white/10">
             <FigmaGlyph size={30} />
           </span>
-          <div className="text-[16px] font-semibold text-white">Allega un frame Figma</div>
+          <div className="text-[16px] font-semibold text-white">{t("Attach a Figma frame", "Allega un frame Figma")}</div>
           <p className="max-w-[330px] text-[12.5px] leading-relaxed text-white/50">
-            Incolla il link di un frame (con il <span className="font-mono text-white/70">node-id</span>). L'agente ne legge
-            il design via Figma MCP.
+            {t("Paste a frame link (with the ", "Incolla il link di un frame (con il ")}<span className="font-mono text-white/70">node-id</span>{t("). The agent reads its design via Figma MCP.", "). L'agente ne legge il design via Figma MCP.")}
           </p>
         </div>
         <div className="px-6 pb-6">
@@ -59,10 +59,10 @@ export function FigmaModal({ onSubmit, onClose }: { onSubmit: (url: string) => v
           </div>
           {node && (
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-[#a259ff]/15 px-2 py-1 text-[11.5px] text-[#c9a3ff]">
-              <Icon name="check" size={12} /> Frame rilevato · {node}
+              <Icon name="check" size={12} /> {t("Frame detected", "Frame rilevato")} · {node}
             </div>
           )}
-          {url && !valid && <div className="mt-2 text-[11.5px] text-amber-300/80">Non sembra un link Figma…</div>}
+          {url && !valid && <div className="mt-2 text-[11.5px] text-amber-300/80">{t("That doesn't look like a Figma link…", "Non sembra un link Figma…")}</div>}
           <div className="mt-4 flex gap-2">
             <button
               disabled={!valid}
@@ -72,10 +72,10 @@ export function FigmaModal({ onSubmit, onClose }: { onSubmit: (url: string) => v
               }`}
               style={valid ? { background: "linear-gradient(90deg,#a259ff,#1abcfe)", boxShadow: "0 0 22px -6px #a259ff" } : undefined}
             >
-              <Icon name="paperclip" size={15} /> Allega
+              <Icon name="paperclip" size={15} /> {t("Attach", "Allega")}
             </button>
             <button onClick={onClose} className="rounded-lg bg-white/8 px-4 text-[13px] text-white/80 hover:bg-white/12">
-              Annulla
+              {t("Cancel", "Annulla")}
             </button>
           </div>
         </div>

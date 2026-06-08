@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { AppSettings, EffortLevel, PermissionMode } from "@shared/protocol";
 import { EFFORT_OPTIONS, MODEL_OPTIONS, PERMISSION_MODES } from "@shared/protocol";
 import { onHostMessage, post } from "../vscode";
+import { t } from "../i18n";
 import { Modal } from "./Modal";
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -45,12 +46,29 @@ export function SettingsModal({ onClose, position = "fixed" }: { onClose: () => 
   };
 
   return (
-    <Modal title="Impostazioni" icon="sliders" onClose={onClose} width={520} position={position}>
+    <Modal title={t("Settings", "Impostazioni")} icon="sliders" onClose={onClose} width={520} position={position}>
       {!s ? (
-        <div className="py-10 text-center text-[13px] text-white/40">Carico le impostazioni…</div>
+        <div className="py-10 text-center text-[13px] text-white/40">{t("Loading settings…", "Carico le impostazioni…")}</div>
       ) : (
         <div className="-mt-1">
-          <Row label="Il tuo nome" hint="Usato nel saluto della dashboard">
+          <Row label={t("Language", "Lingua")} hint={t("Interface language", "Lingua dell'interfaccia")}>
+            <div className="flex justify-end gap-1">
+              {([["auto", "Auto"], ["en", "English"], ["it", "Italiano"]] as const).map(([val, lbl]) => (
+                <button
+                  key={val}
+                  onClick={() => patch({ language: val })}
+                  className={`rounded-md px-2.5 py-1 text-[11.5px] transition-colors ${
+                    s.language === val ? "bg-[#4067e8] text-white" : "bg-white/5 text-white/60 hover:text-white"
+                  }`}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </Row>
+          <Divider />
+
+          <Row label={t("Your name", "Il tuo nome")} hint={t("Used in the dashboard greeting", "Usato nel saluto della dashboard")}>
             <input
               value={s.userName}
               onChange={(e) => patch({ userName: e.target.value })}
@@ -60,7 +78,7 @@ export function SettingsModal({ onClose, position = "fixed" }: { onClose: () => 
           </Row>
           <Divider />
 
-          <Row label="Modalità predefinita" hint="Con cui partono i nuovi agenti">
+          <Row label={t("Default mode", "Modalità predefinita")} hint={t("New agents start with this", "Con cui partono i nuovi agenti")}>
             <div className="flex flex-wrap justify-end gap-1">
               {PERMISSION_MODES.map((m) => (
                 <button
@@ -78,7 +96,7 @@ export function SettingsModal({ onClose, position = "fixed" }: { onClose: () => 
           </Row>
           <Divider />
 
-          <Row label="Modello" hint="Per i nuovi agenti">
+          <Row label={t("Model", "Modello")} hint={t("For new agents", "Per i nuovi agenti")}>
             <select
               value={s.model}
               onChange={(e) => patch({ model: e.target.value })}
@@ -93,7 +111,7 @@ export function SettingsModal({ onClose, position = "fixed" }: { onClose: () => 
           </Row>
           <Divider />
 
-          <Row label="Effort di ragionamento">
+          <Row label={t("Reasoning effort", "Effort di ragionamento")}>
             <div className="flex justify-end gap-1">
               {EFFORT_OPTIONS.map((e) => (
                 <button
@@ -110,17 +128,17 @@ export function SettingsModal({ onClose, position = "fixed" }: { onClose: () => 
           </Row>
           <Divider />
 
-          <Row label="Thinking esteso" hint="Ragionamento più profondo">
+          <Row label={t("Extended thinking", "Thinking esteso")} hint={t("Deeper reasoning", "Ragionamento più profondo")}>
             <Toggle on={s.thinking} onChange={(v) => patch({ thinking: v })} />
           </Row>
           <Divider />
 
-          <Row label="Accesso completo" hint="Niente sandbox, può fare tutto sul tuo sistema">
+          <Row label={t("Full access", "Accesso completo")} hint={t("No sandbox, can do anything on your system", "Niente sandbox, può fare tutto sul tuo sistema")}>
             <Toggle on={s.fullAccess} onChange={(v) => patch({ fullAccess: v })} />
           </Row>
           <Divider />
 
-          <Row label="URL preview" hint="Dev server mostrato nel Design">
+          <Row label={t("Preview URL", "URL preview")} hint={t("Dev server shown in Design", "Dev server mostrato nel Design")}>
             <input
               value={s.previewUrl}
               onChange={(e) => patch({ previewUrl: e.target.value })}
@@ -129,7 +147,7 @@ export function SettingsModal({ onClose, position = "fixed" }: { onClose: () => 
           </Row>
           <Divider />
 
-          <Row label="Apri dashboard all'avvio">
+          <Row label={t("Open dashboard on startup", "Apri dashboard all'avvio")}>
             <Toggle on={s.openDashboardOnStartup} onChange={(v) => patch({ openDashboardOnStartup: v })} />
           </Row>
         </div>

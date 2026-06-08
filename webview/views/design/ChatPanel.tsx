@@ -12,6 +12,7 @@ import type {
 import { Icon, FigmaGlyph, IconName } from "../../ui/Icon";
 import { Md } from "../../ui/Markdown";
 import { Composer } from "./Composer";
+import { t } from "../../i18n";
 
 /** Copy an attachment: the image itself to the clipboard, or the file path / Figma URL. */
 async function copyAttachment(a: Attachment): Promise<void> {
@@ -114,9 +115,9 @@ function AttachActions({ a, onPreview }: { a: Attachment; onPreview: (a: Attachm
   );
   return (
     <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-      <Btn icon="eye" title="Anteprima" onClick={() => onPreview(a)} />
-      <Btn icon="paperclip" title="Riallega alla chat" onClick={() => reattach(a)} />
-      <Btn icon="copy" title="Copia" onClick={() => void copyAttachment(a)} />
+      <Btn icon="eye" title={t("Preview", "Anteprima")} onClick={() => onPreview(a)} />
+      <Btn icon="paperclip" title={t("Re-attach to chat", "Riallega alla chat")} onClick={() => reattach(a)} />
+      <Btn icon="copy" title={t("Copy", "Copia")} onClick={() => void copyAttachment(a)} />
     </div>
   );
 }
@@ -186,19 +187,19 @@ function AttachmentLightbox({ att, onClose }: { att: Attachment; onClose: () => 
             onClick={() => reattach(att)}
             className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[12.5px] text-white/85 hover:bg-white/15"
           >
-            <Icon name="paperclip" size={14} /> Riallega
+            <Icon name="paperclip" size={14} /> {t("Re-attach", "Riallega")}
           </button>
           <button
             onClick={() => void copyAttachment(att)}
             className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[12.5px] text-white/85 hover:bg-white/15"
           >
-            <Icon name="copy" size={14} /> Copia
+            <Icon name="copy" size={14} /> {t("Copy", "Copia")}
           </button>
           <button
             onClick={onClose}
             className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[12.5px] text-white/85 hover:bg-white/15"
           >
-            <Icon name="x" size={14} /> Chiudi
+            <Icon name="x" size={14} /> {t("Close", "Chiudi")}
           </button>
         </div>
       </div>
@@ -223,7 +224,7 @@ function AssistantMessage({ message }: { message: ChatMessage }) {
         <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
           <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-white/40">
             <Icon name="sparkles" size={12} className="text-[#70fff3]/70" />
-            Ragionamento
+            {t("Reasoning", "Ragionamento")}
             {message.streaming && <ThinkingDots />}
           </div>
           <Md text={message.reasoning} className="ac-md-dim text-[12px] text-white/45" />
@@ -265,7 +266,10 @@ export function ChatPanel({
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-4 pr-1">
         {messages.length === 0 && (
           <p className="mt-10 text-center text-[13px] text-white/35">
-            Chiedi all'agente di modificare il design o seleziona un componente.
+            {t(
+              "Ask the agent to modify the design or select a component.",
+              "Chiedi all'agente di modificare il design o seleziona un componente.",
+            )}
           </p>
         )}
         {messages.map((m) =>
@@ -288,7 +292,7 @@ export function ChatPanel({
         {status === "working" && (
           <div className="ac-fade-in flex items-center gap-2 text-[12px] text-white/55">
             <ThinkingDots />
-            <span className="ac-text-shimmer font-medium">Claude sta lavorando…</span>
+            <span className="ac-text-shimmer font-medium">{t("Claude is working…", "Claude sta lavorando…")}</span>
           </div>
         )}
         {status === "asking" && (
@@ -296,7 +300,7 @@ export function ChatPanel({
             <span className="ac-pulse-ring flex size-5 items-center justify-center rounded-full bg-[#70fff3]/15">
               <Icon name="hand" size={12} />
             </span>
-            Claude ti sta facendo una domanda…
+            {t("Claude is asking you a question…", "Claude ti sta facendo una domanda…")}
           </div>
         )}
         {status === "awaiting-approval" && (
@@ -304,7 +308,7 @@ export function ChatPanel({
             <span className="ac-pulse-ring flex size-5 items-center justify-center rounded-full bg-[#dacd3c]/15">
               <Icon name="hand" size={12} />
             </span>
-            In attesa della tua approvazione…
+            {t("Awaiting your approval…", "In attesa della tua approvazione…")}
           </div>
         )}
       </div>

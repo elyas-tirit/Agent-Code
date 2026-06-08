@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { DesignMode, SelectedComponent } from "@shared/protocol";
 import { Icon, IconName } from "../../ui/Icon";
 import { mediaUrl } from "../../vscode";
+import { t } from "../../i18n";
 
 interface PreviewCanvasProps {
   mode: DesignMode;
@@ -270,7 +271,7 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
       h: pendingRect.h / r.height,
     };
     onSelect({
-      label: label.trim() || `Area su ${device.label}`,
+      label: label.trim() || t(`Area on ${device.label}`, `Area su ${device.label}`),
       url,
       device: device.label,
       rect: norm,
@@ -293,7 +294,7 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
     <div className="flex min-w-0 flex-1 flex-col gap-3">
       {/* Toolbar */}
       <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-        <ToolbarButton icon="refresh" title="Ricarica" onClick={refresh} />
+        <ToolbarButton icon="refresh" title={t("Reload", "Ricarica")} onClick={refresh} />
         <form
           className="flex min-w-0 flex-1"
           onSubmit={(e) => {
@@ -312,13 +313,13 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
         {mode === "design" && (
           <button
             onClick={() => (selecting ? cancelSelection() : setSelecting(true))}
-            title="Seleziona un'area da spiegare all'agente"
+            title={t("Select an area to explain to the agent", "Seleziona un'area da spiegare all'agente")}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] transition-colors ${
               selecting ? "bg-[#70fff3] text-black" : "text-white/70 hover:bg-white/10 hover:text-white"
             }`}
           >
             <Icon name="cursor" size={15} />
-            Seleziona
+            {t("Select", "Seleziona")}
           </button>
         )}
 
@@ -332,7 +333,7 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
         >
           <button
             onClick={toggleDevice}
-            title={device.category === "desktop" ? `Passa a ${lastDevice.label}` : "Torna a Desktop"}
+            title={device.category === "desktop" ? t(`Switch to ${lastDevice.label}`, `Passa a ${lastDevice.label}`) : t("Back to Desktop", "Torna a Desktop")}
             className={`flex h-8 items-center gap-1 rounded-lg px-2 transition-colors ${
               device.category !== "desktop" ? "bg-[#4067e8]/20 text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
             }`}
@@ -342,7 +343,7 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
           </button>
           {deviceMenu && (
             <div className="ac-pop absolute right-0 top-9 z-50 w-[220px] rounded-xl border border-white/10 bg-[#1b1b1b] p-1.5 shadow-[0_18px_50px_rgba(0,0,0,0.6)]">
-              <div className="px-2 pb-1 pt-1 text-[11px] uppercase tracking-wide text-white/35">Scegli dispositivo</div>
+              <div className="px-2 pb-1 pt-1 text-[11px] uppercase tracking-wide text-white/35">{t("Choose device", "Scegli dispositivo")}</div>
               {DEVICES.map((d) => (
                 <button
                   key={d.id}
@@ -362,12 +363,12 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
 
         {/* Preview settings (replaces Play) */}
         <div className="relative">
-          <ToolbarButton icon="sliders" title="Impostazioni preview" active={settingsMenu} onClick={() => setSettingsMenu((s) => !s)} />
+          <ToolbarButton icon="sliders" title={t("Preview settings", "Impostazioni preview")} active={settingsMenu} onClick={() => setSettingsMenu((s) => !s)} />
           {settingsMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setSettingsMenu(false)} />
               <div className="ac-pop absolute right-0 top-9 z-50 w-[240px] rounded-xl border border-white/10 bg-[#1b1b1b] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.6)]">
-                <div className="mb-2 text-[11px] uppercase tracking-wide text-white/35">Sfondo</div>
+                <div className="mb-2 text-[11px] uppercase tracking-wide text-white/35">{t("Background", "Sfondo")}</div>
                 <div className="mb-3 flex gap-1.5">
                   {(["white", "dark", "checker"] as BgKind[]).map((b) => (
                     <button
@@ -376,7 +377,7 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
                       className={`h-7 flex-1 rounded-md text-[11px] capitalize ring-1 transition ${bg === b ? "ring-[#70fff3]" : "ring-white/10"}`}
                       style={{ background: b === "checker" ? BG.checker : BG[b], color: b === "white" ? "#333" : "#fff" }}
                     >
-                      {b === "white" ? "Bianco" : b === "dark" ? "Scuro" : "Trasp."}
+                      {b === "white" ? t("White", "Bianco") : b === "dark" ? t("Dark", "Scuro") : t("Transp.", "Trasp.")}
                     </button>
                   ))}
                 </div>
@@ -397,7 +398,7 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
                   onClick={() => setGrid((g) => !g)}
                   className="flex w-full items-center justify-between rounded-md px-1 py-1 text-[12.5px] text-white/80 hover:bg-white/5"
                 >
-                  Griglia
+                  {t("Grid", "Griglia")}
                   <span className={`h-4 w-7 rounded-full p-0.5 transition-colors ${grid ? "bg-[#4067e8]" : "bg-white/15"}`}>
                     <span className={`block size-3 rounded-full bg-white transition-transform ${grid ? "translate-x-3" : ""}`} />
                   </span>
@@ -407,8 +408,8 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
           )}
         </div>
 
-        <ToolbarButton icon={fullscreen ? "minimize" : "maximize"} title="Schermo intero" onClick={toggleFullscreen} />
-        {onCollapse && <ToolbarButton icon="panel-left" title="Comprimi la preview" onClick={onCollapse} />}
+        <ToolbarButton icon={fullscreen ? "minimize" : "maximize"} title={t("Fullscreen", "Schermo intero")} onClick={toggleFullscreen} />
+        {onCollapse && <ToolbarButton icon="panel-left" title={t("Collapse the preview", "Comprimi la preview")} onClick={onCollapse} />}
       </div>
 
       {/* Canvas */}
@@ -440,7 +441,7 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
           {/* Picker active (in-page element highlighting handled inside the iframe) */}
           {selecting && pickerReady && (
             <div className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full bg-black/75 px-3 py-1 text-[12px] text-white">
-              Passa sopra un elemento e cliccalo per spiegarlo all'agente
+              {t("Hover over an element and click it to explain it to the agent", "Passa sopra un elemento e cliccalo per spiegarlo all'agente")}
             </div>
           )}
 
@@ -464,7 +465,7 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
               onMouseUp={onOverlayUp}
             >
               <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-black/75 px-3 py-1 text-[12px] text-white">
-                Trascina per selezionare un'area · oppure clicca un punto
+                {t("Drag to select an area · or click a point", "Trascina per selezionare un'area · oppure clicca un punto")}
               </div>
               {hover && !pendingRect && (
                 <div
@@ -485,13 +486,13 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
                       top: pendingRect.y + pendingRect.h + 8,
                     }}
                   >
-                    <div className="mb-1.5 text-[12px] text-white/70">Cosa hai selezionato?</div>
+                    <div className="mb-1.5 text-[12px] text-white/70">{t("What did you select?", "Cosa hai selezionato?")}</div>
                     <input
                       autoFocus
                       value={label}
                       onChange={(e) => setLabel(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && confirmSelection()}
-                      placeholder='es. "il bottone Accedi", "la hero"…'
+                      placeholder={t('e.g. "the Sign in button", "the hero"…', 'es. "il bottone Accedi", "la hero"…')}
                       className="mb-2 w-full rounded-md bg-black/40 px-2.5 py-1.5 text-[13px] text-white outline-none ring-1 ring-white/10 focus:ring-[#70fff3]/60"
                     />
                     <div className="flex gap-1.5">
@@ -499,10 +500,10 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
                         onClick={confirmSelection}
                         className="flex-1 rounded-md bg-gradient-to-r from-[#4067e8] to-[#70fff3] py-1.5 text-[12.5px] font-medium text-black"
                       >
-                        Allega alla chat
+                        {t("Attach to chat", "Allega alla chat")}
                       </button>
                       <button onClick={cancelSelection} className="rounded-md bg-white/10 px-3 py-1.5 text-[12.5px] text-white/80 hover:bg-white/15">
-                        Annulla
+                        {t("Cancel", "Annulla")}
                       </button>
                     </div>
                   </div>

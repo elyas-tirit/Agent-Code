@@ -1,4 +1,5 @@
 import { Icon } from "../../ui/Icon";
+import { t } from "../../i18n";
 
 interface NewAgentCardProps {
   onClick: () => void;
@@ -23,16 +24,16 @@ export function NewAgentCard({ onClick }: NewAgentCardProps) {
           <Icon name="plus" size={38} strokeWidth={1.8} />
         </div>
         <p className="text-[20px] font-normal leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
-          Avvia nuovo agente
+          {t("Start new agent", "Avvia nuovo agente")}
         </p>
       </div>
 
       {/* Subtitle */}
       <div className="flex flex-1 items-center px-5 py-4">
         <p className="text-[15px] font-light leading-snug text-white/90">
-          Avvia una nuova conversazione con Claude.
+          {t("Start a new conversation with Claude.", "Avvia una nuova conversazione con Claude.")}
           <br />
-          Utilizza lo usage del tuo abbonamento.
+          {t("Uses the usage from your subscription.", "Utilizza lo usage del tuo abbonamento.")}
         </p>
       </div>
     </div>

@@ -6,9 +6,10 @@ import { AgentCard } from "./AgentCard";
 import { NewAgentCard } from "./NewAgentCard";
 import { UsageModal } from "../../ui/UsageModal";
 import { SettingsModal } from "../../ui/SettingsModal";
+import { t } from "../../i18n";
 
 const EMPTY: DashboardState = {
-  greeting: "Ciao",
+  greeting: t("Hi", "Ciao"),
   usage: { percent: 0, resetsInLabel: "", known: false },
   agents: [],
 };
@@ -72,8 +73,8 @@ export function AgentsDashboard({ initial }: { initial?: DashboardState }) {
       {usageOpen && (
         <UsageModal
           usage={state.usage}
-          title="Uso totale"
-          scope="Token e limiti consumati da tutti gli agenti, sul tuo abbonamento Claude."
+          title={t("Total usage", "Uso totale")}
+          scope={t("Tokens and limits consumed by all agents, on your Claude subscription.", "Token e limiti consumati da tutti gli agenti, sul tuo abbonamento Claude.")}
           onClose={() => setUsageOpen(false)}
         />
       )}

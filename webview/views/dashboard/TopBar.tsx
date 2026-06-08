@@ -1,5 +1,6 @@
 import type { UsageInfo } from "@shared/protocol";
 import { Icon } from "../../ui/Icon";
+import { t } from "../../i18n";
 
 function fmtTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -52,7 +53,7 @@ export function TopBar({
     <div className="relative flex items-center justify-between">
       <button
         onClick={onOpenSettings}
-        title="Impostazioni"
+        title={t("Settings", "Impostazioni")}
         className="flex size-[42px] items-center justify-center rounded-full bg-black/40 text-white/70 shadow-[0_5px_8px_rgba(0,0,0,0.12)] ring-1 ring-transparent transition-all hover:text-white hover:ring-white/15"
       >
         <Icon name="sparkles" size={20} />
@@ -62,7 +63,7 @@ export function TopBar({
           {greeting}
         </div>
       </div>
-      <button onClick={onOpenUsage} title="Uso totale del tuo abbonamento">
+      <button onClick={onOpenUsage} title={t("Total usage of your subscription", "Uso totale del tuo abbonamento")}>
         <SessionBadge usage={usage} />
       </button>
     </div>

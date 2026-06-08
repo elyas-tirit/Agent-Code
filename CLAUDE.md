@@ -2,11 +2,12 @@
 
 > Questo file viene letto automaticamente a inizio sessione. Riassume cos'è il
 > progetto, com'è fatto, cosa è già pronto, i limiti noti e i prossimi passi.
-> Lingua di lavoro con l'utente (Elyas): **italiano**. Codice/identificatori in inglese.
+> Note di sviluppo in **italiano**; codice/identificatori in inglese. La UI prodotto è
+> i18n: **inglese di default** (segue il locale di VS Code), switch IT/EN dai settings.
 
 ## Cos'è
 
-**Agent Code** è una "mod" di VS Code, ad uso **personale** di Elyas, pensata per
+**Agent Code** è una "mod" di VS Code **open source** (MIT), pensata per
 designer: rende VS Code più semplice mantenendo (quasi) tutte le sue funzioni.
 Due superfici, fedeli a due frame Figma:
 
@@ -21,7 +22,7 @@ stessa estensione. Gli "agenti" e la chat **sono Claude Code reale** via
 
 - Repo da pushare (non ancora fatto): https://github.com/elyas-tirit/Agent-Code
 - Upstream VS Code: https://github.com/microsoft/vscode
-- Figma: file `dcmKzsxDx5Pu7nGo8jSfLc` ("Veliu-APP"). Frame: dashboard `697-2250`, toggle Design `697-2455`, stati card `697-2284`(idle/blu) `697-2298`(approval/giallo) `697-2330`(working), composer `697-2535/2558/2580/2603/2630/2653`.
+- Figma: file di riferimento del design (via Dev Mode MCP). Frame: dashboard `697-2250`, toggle Design `697-2455`, stati card `697-2284`(idle/blu) `697-2298`(approval/giallo) `697-2330`(working), composer `697-2535/2558/2580/2603/2630/2653`.
 
 ## Stack
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { SelectedComponent } from "@shared/protocol";
 import { Icon } from "../../ui/Icon";
 import { FloatingPanel } from "../../ui/FloatingPanel";
+import { t } from "../../i18n";
 
 /**
  * Focused AI panel for a picked component (Cursor/Lovable-style). Lets you describe
@@ -18,7 +19,7 @@ export function ComponentPromptModal({
   onApply: (prompt: string) => void;
   onClose: () => void;
 }) {
-  const title = component.component ? `<${component.component}>` : component.tag ? `<${component.tag}>` : "Componente";
+  const title = component.component ? `<${component.component}>` : component.tag ? `<${component.tag}>` : t("Component", "Componente");
   const [tab, setTab] = useState<"edit" | "prompt">("prompt");
   const [prompt, setPrompt] = useState("");
   const [classes, setClasses] = useState(component.cls ?? "");
@@ -31,7 +32,10 @@ export function ComponentPromptModal({
     const ref = component.source || (component.file ? `${component.file}${component.line ? `:${component.line}` : ""}` : "");
     let text: string;
     if (tab === "edit") {
-      text = `Aggiorna le classi Tailwind di ${title}${ref ? ` (${ref})` : ""} con: ${classes.trim()}`;
+      text = t(
+        `Update the Tailwind classes of ${title}${ref ? ` (${ref})` : ""} with: ${classes.trim()}`,
+        `Aggiorna le classi Tailwind di ${title}${ref ? ` (${ref})` : ""} con: ${classes.trim()}`,
+      );
     } else {
       text = `${builder ? "[Builder] " : ""}${prompt.trim()}`;
     }
@@ -59,7 +63,7 @@ export function ComponentPromptModal({
 
         {tab === "prompt" ? (
           <>
-            <div className="text-[12.5px] text-white/55">Descrivi cosa vuoi cambiare</div>
+            <div className="text-[12.5px] text-white/55">{t("Describe what you want to change", "Descrivi cosa vuoi cambiare")}</div>
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5">
               <textarea
                 autoFocus
@@ -67,13 +71,13 @@ export function ComponentPromptModal({
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.metaKey || e.ctrlKey) && apply()}
                 rows={4}
-                placeholder="es. rendi il bottone più grande e spostalo a destra, con sfondo verde…"
+                placeholder={t("e.g. make the button bigger and move it to the right, with a green background…", "es. rendi il bottone più grande e spostalo a destra, con sfondo verde…")}
                 className="w-full resize-none bg-transparent text-[13px] text-white outline-none placeholder:text-white/30"
               />
               <div className="mt-1 flex items-center gap-1.5">
                 <button
                   onClick={() => setBuilder((b) => !b)}
-                  title="Modalità builder: ricostruisci il componente da zero"
+                  title={t("Builder mode: rebuild the component from scratch", "Modalità builder: ricostruisci il componente da zero")}
                   className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] transition-colors ${
                     builder ? "bg-[#70fff3]/15 text-[#70fff3]" : "text-white/55 hover:bg-white/5 hover:text-white"
                   }`}
@@ -83,7 +87,7 @@ export function ComponentPromptModal({
                 <button
                   onClick={apply}
                   disabled={!ready}
-                  title="Invia (⌘↵)"
+                  title={t("Send (⌘↵)", "Invia (⌘↵)")}
                   className={`ml-auto flex size-8 items-center justify-center rounded-lg transition-all ${
                     ready ? "bg-white text-black" : "bg-white/10 text-white/40"
                   }`}
@@ -95,7 +99,7 @@ export function ComponentPromptModal({
           </>
         ) : (
           <>
-            <div className="text-[12.5px] text-white/55">Classi Tailwind del componente</div>
+            <div className="text-[12.5px] text-white/55">{t("Component's Tailwind classes", "Classi Tailwind del componente")}</div>
             <textarea
               autoFocus
               value={classes}
@@ -110,7 +114,7 @@ export function ComponentPromptModal({
         {/* Selected reference */}
         <div>
           <div className="mb-1.5 flex items-center gap-1.5 text-[11.5px] text-white/45">
-            <Icon name="cursor" size={12} className="text-[#70fff3]" /> Selezionato: {title}
+            <Icon name="cursor" size={12} className="text-[#70fff3]" /> {t("Selected:", "Selezionato:")} {title}
             {(component.source || component.file) && (
               <span className="ml-auto truncate font-mono text-[11px] text-white/35">{component.source || component.file}</span>
             )}
@@ -125,7 +129,7 @@ export function ComponentPromptModal({
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 pt-1">
           <button onClick={onClose} className="rounded-lg bg-white/8 px-4 py-2 text-[13px] text-white/80 hover:bg-white/12">
-            Annulla
+            {t("Cancel", "Annulla")}
           </button>
           <button
             onClick={apply}
@@ -134,7 +138,7 @@ export function ComponentPromptModal({
               ready ? "bg-[#4067e8] text-white hover:bg-[#3457cf]" : "cursor-not-allowed bg-white/10 text-white/40"
             }`}
           >
-            Applica modifiche
+            {t("Apply changes", "Applica modifiche")}
           </button>
         </div>
       </div>

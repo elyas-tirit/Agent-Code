@@ -229,7 +229,7 @@ test("serves a friendly empty state (not an error) when the dev server is down",
   try {
     const r = await get(base + "/");
     assert.equal(r.status, 200); // a welcoming placeholder, not a scary error page
-    assert.match(r.body, /In attesa del tuo frontend/);
+    assert.match(r.body, /Waiting for your frontend/); // English by default
     assert.match(r.body, /setInterval/); // self-heals: reloads when the server comes up
   } finally {
     proxy.dispose();

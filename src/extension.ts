@@ -7,6 +7,7 @@ import type { EffortLevel, PermissionMode } from "./shared/protocol";
 import { AgentsDashboardPanel } from "./panels/AgentsDashboardPanel";
 import { DesignWorkspacePanel } from "./panels/DesignWorkspacePanel";
 import { JsonFileStore } from "./persistence";
+import { resolveLang, setHostLang, t } from "./i18n";
 
 let manager: AgentManager | undefined;
 let managerPromise: Promise<AgentManager> | undefined;
@@ -79,8 +80,9 @@ async function buildManager(context: vscode.ExtensionContext): Promise<AgentMana
   // focused, so you can step away and get pinged (no spam while you watch).
   manager.onAttention(({ agentId, name, message }) => {
     if (vscode.window.state.focused) return;
-    void vscode.window.showWarningMessage(`${name} — ${message}`, "Apri").then((sel) => {
-      if (sel === "Apri" && manager) DesignWorkspacePanel.createOrShow(context, manager, agentId);
+    const open = t("Open", "Apri");
+    void vscode.window.showWarningMessage(`${name} — ${message}`, open).then((sel) => {
+      if (sel === open && manager) DesignWorkspacePanel.createOrShow(context, manager, agentId);
     });
   });
 
@@ -122,39 +124,73 @@ function surfaceBackendStatus(
   const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   if (real) {
     item.text = "$(sparkle) Agent Code";
-    item.tooltip = "Agenti Claude reali attivi (login del tuo abbonamento Claude).";
+    item.tooltip = t(
+      "Real Claude agents active (login with your Claude subscription).",
+      "Agenti Claude reali attivi (login del tuo abbonamento Claude).",
+    );
   } else {
-    item.text = "$(warning) Agent Code: simulato";
-    item.tooltip =
-      "Claude Code non disponibile — agenti simulati (mock). Clicca per le impostazioni.";
+    item.text = t("$(warning) Agent Code: simulated", "$(warning) Agent Code: simulato");
+    item.tooltip = t(
+      "Claude Code unavailable — simulated agents (mock). Click for settings.",
+      "Claude Code non disponibile — agenti simulati (mock). Clicca per le impostazioni.",
+    );
   }
-  item.command = { title: "Impostazioni", command: "workbench.action.openSettings", arguments: ["agentCode"] };
+  item.command = { title: t("Settings", "Impostazioni"), command: "workbench.action.openSettings", arguments: ["agentCode"] };
   item.show();
   context.subscriptions.push(item);
 
   if (!real && choice !== "mock") {
+    const howTo = t("How to enable it", "Come attivarlo");
+    const settings = t("Settings", "Impostazioni");
     void vscode.window
       .showWarningMessage(
-        "Agent Code sta usando agenti simulati (mock): Claude Code non è disponibile (SDK non caricato o login mancante). Le risposte sono finte finché non lo attivi.",
-        "Come attivarlo",
-        "Impostazioni",
+        t(
+          "Agent Code is using simulated agents (mock): Claude Code is unavailable (SDK not loaded or login missing). Responses are fake until you enable it.",
+          "Agent Code sta usando agenti simulati (mock): Claude Code non è disponibile (SDK non caricato o login mancante). Le risposte sono finte finché non lo attivi.",
+        ),
+        howTo,
+        settings,
       )
       .then((sel) => {
-        if (sel === "Impostazioni") {
+        if (sel === settings) {
           void vscode.commands.executeCommand("workbench.action.openSettings", "agentCode");
-        } else if (sel === "Come attivarlo") {
+        } else if (sel === howTo) {
           void vscode.env.openExternal(vscode.Uri.parse("https://docs.claude.com/claude-code"));
         }
       });
   } else if (real && !claudePath) {
     // SDK loaded but no `claude` CLI found on disk → agents may fail until login.
     void vscode.window.showInformationMessage(
-      "Agent Code: SDK pronto, ma non ho trovato il CLI `claude`. Se gli agenti falliscono, esegui il login a Claude Code (o imposta `agentCode.claudePath`).",
+      t(
+        "Agent Code: SDK ready, but I couldn't find the `claude` CLI. If agents fail, log in to Claude Code (or set `agentCode.claudePath`).",
+        "Agent Code: SDK pronto, ma non ho trovato il CLI `claude`. Se gli agenti falliscono, esegui il login a Claude Code (o imposta `agentCode.claudePath`).",
+      ),
     );
   }
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  // Resolve the UI language up front (host strings + bootstrap), and keep it in
+  // sync when the user changes it from Settings.
+  const applyLang = (): "en" | "it" => {
+    const lang = resolveLang(
+      vscode.workspace.getConfiguration("agentCode").get<string>("language", "auto"),
+      vscode.env.language,
+    );
+    setHostLang(lang);
+    return lang;
+  };
+  applyLang();
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (!e.affectsConfiguration("agentCode.language")) return;
+      const lang = applyLang();
+      AgentsDashboardPanel.broadcastLang(lang);
+      DesignWorkspacePanel.broadcastLang(lang);
+      manager?.refresh(); // re-emit host-rendered labels (greeting, card states)
+    }),
+  );
+
   context.subscriptions.push(
     vscode.commands.registerCommand("agentCode.openDashboard", async () => {
       AgentsDashboardPanel.createOrShow(context, await getManager(context));
