@@ -10,6 +10,7 @@ import type {
   ToolDiff,
 } from "@shared/protocol";
 import { Icon, FigmaGlyph } from "../../ui/Icon";
+import { Md } from "../../ui/Markdown";
 import { Composer } from "./Composer";
 
 interface ChatPanelProps {
@@ -98,23 +99,42 @@ function MessageAttachments({ attachments }: { attachments: Attachment[] }) {
   );
 }
 
+function ThinkingDots() {
+  return (
+    <span className="ac-think inline-flex gap-1 align-middle">
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}
+
 function AssistantMessage({ message }: { message: ChatMessage }) {
+  const empty = !message.text && !message.reasoning && (!message.tools || message.tools.length === 0);
   return (
     <div className="ac-slide-up space-y-2">
       {message.reasoning && (
         <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
-          <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-white/40">
-            Reasoning{message.streaming ? "…" : ""}
+          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-white/40">
+            <Icon name="sparkles" size={12} className="text-[#70fff3]/70" />
+            Ragionamento
+            {message.streaming && <ThinkingDots />}
           </div>
-          <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-white/45">{message.reasoning}</p>
+          <Md text={message.reasoning} className="ac-md-dim text-[12px] text-white/45" />
         </div>
       )}
       {message.tools?.map((t) => <ToolRow key={t.id} tool={t} />)}
-      {(message.text || message.streaming) && (
-        <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-white/85">
-          {message.text}
-          {message.streaming && !message.text && <span className="animate-pulse text-[#70fff3]">▍</span>}
-        </p>
+      {message.text && (
+        <div className="text-[13px] leading-relaxed text-white/85">
+          <Md text={message.text} />
+          {message.streaming && <span className="ac-caret" />}
+        </div>
+      )}
+      {/* Just started — nothing to show yet: a gentle thinking shimmer. */}
+      {empty && message.streaming && (
+        <div className="flex items-center gap-2 text-[12.5px] text-white/45">
+          <ThinkingDots /> <span className="ac-text-shimmer font-medium">Sto pensando…</span>
+        </div>
       )}
     </div>
   );
@@ -152,8 +172,8 @@ export function ChatPanel({
             <div key={m.id} className="ac-slide-up flex flex-col items-end">
               {m.attachments && m.attachments.length > 0 && <MessageAttachments attachments={m.attachments} />}
               {m.text && (
-                <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-[#4067e8] px-3 py-2 text-[13px] text-white shadow-[0_4px_14px_-4px_rgba(64,103,232,0.6)]">
-                  {m.text}
+                <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-[#4067e8] px-3 py-2 text-[13px] text-white shadow-[0_4px_14px_-4px_rgba(64,103,232,0.6)]">
+                  <Md text={m.text} />
                 </div>
               )}
             </div>
@@ -163,18 +183,26 @@ export function ChatPanel({
         )}
 
         {status === "working" && (
-          <div className="flex items-center gap-2 text-[12px] text-white/50">
-            <span className="size-3 animate-spin rounded-full border border-[#70fff3]/60 border-t-transparent" />
-            Claude sta lavorando…
+          <div className="ac-fade-in flex items-center gap-2 text-[12px] text-white/55">
+            <ThinkingDots />
+            <span className="ac-text-shimmer font-medium">Claude sta lavorando…</span>
           </div>
         )}
         {status === "asking" && (
-          <div className="flex items-center gap-2 text-[12px] text-[#70fff3]">
-            <Icon name="hand" size={14} /> Claude ti sta facendo una domanda…
+          <div className="ac-fade-in flex items-center gap-2 text-[12px] text-[#70fff3]">
+            <span className="ac-pulse-ring flex size-5 items-center justify-center rounded-full bg-[#70fff3]/15">
+              <Icon name="hand" size={12} />
+            </span>
+            Claude ti sta facendo una domanda…
           </div>
         )}
         {status === "awaiting-approval" && (
-          <div className="text-[12px] text-[#dacd3c]">In attesa della tua approvazione…</div>
+          <div className="ac-fade-in flex items-center gap-2 text-[12px] text-[#dacd3c]">
+            <span className="ac-pulse-ring flex size-5 items-center justify-center rounded-full bg-[#dacd3c]/15">
+              <Icon name="hand" size={12} />
+            </span>
+            In attesa della tua approvazione…
+          </div>
         )}
       </div>
 

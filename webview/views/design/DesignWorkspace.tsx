@@ -303,7 +303,13 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
           <QuestionModal
             request={question}
             onRespond={(answers) => {
-              post({ type: "question/respond", id: question.id, answers });
+              // Echo the answer into the chat so it's visible + persisted (the
+              // modal otherwise vanishes with no trace of what you chose).
+              const summary = question.questions
+                .map((q) => `**${q.header}:** ${answers[q.question] ?? "—"}`)
+                .join("\n");
+              setMessages((prev) => [...prev, { id: genId(), role: "user", text: summary }]);
+              post({ type: "question/respond", id: question.id, answers, summary });
               setQuestion(undefined);
             }}
           />

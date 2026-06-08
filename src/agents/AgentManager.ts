@@ -26,6 +26,10 @@ export interface PersistedAgent {
   id: string;
   name: string;
   sdkSessionId?: string;
+  /** The cwd the agent was created in. Claude Code indexes sessions by directory,
+   *  so we MUST resume with the original cwd (not the currently-open folder),
+   *  otherwise the resume can't find the conversation. */
+  cwd?: string;
   messages: ChatMessage[];
   tokens?: TokenUsage;
 }
@@ -119,6 +123,8 @@ export class AgentManager {
   private sessions = new Map<string, AgentSession>();
   private transcripts = new Map<string, ChatMessage[]>();
   private sdkSessionIds = new Map<string, string>();
+  // The cwd each agent was created in — resume MUST use this, not the current folder.
+  private agentCwds = new Map<string, string | undefined>();
   private waking = new Map<string, Promise<AgentSession | undefined>>();
   private listeners: ChangeListener[] = [];
   private attention: ((info: { agentId: string; name: string; message: string }) => void)[] = [];
@@ -185,6 +191,7 @@ export class AgentManager {
       id,
       name: this.cards.get(id)!.name,
       sdkSessionId: this.sdkSessionIds.get(id),
+      cwd: this.agentCwds.get(id),
       messages: this.transcripts.get(id) ?? [],
       tokens: this.cards.get(id)!.tokens,
     }));
@@ -215,6 +222,8 @@ export class AgentManager {
       // Restored history is settled — clear any leftover streaming flag.
       this.transcripts.set(a.id, (a.messages ?? []).map((m) => ({ ...m, streaming: false })));
       if (a.sdkSessionId) this.sdkSessionIds.set(a.id, a.sdkSessionId);
+      // Keep the entry even when undefined so getOrWakeSession knows it was restored.
+      this.agentCwds.set(a.id, a.cwd);
       if (a.tokens) this.cards.get(a.id)!.tokens = a.tokens;
     }
     this.notify();
@@ -334,6 +343,7 @@ export class AgentManager {
       actions: actionsForStatus(status),
     });
     this.transcripts.set(agentId, []);
+    this.agentCwds.set(agentId, this.cwd);
     this.sessions.set(agentId, session);
     if (prompt) addUserMessage(this.transcripts.get(agentId)!, prompt);
     this.attach(agentId, session);
@@ -354,7 +364,10 @@ export class AgentManager {
     const p = (async (): Promise<AgentSession> => {
       const session = await this.backend.spawn({
         name: card.name,
-        cwd: this.cwd,
+        // Resume under the agent's ORIGINAL cwd — Claude Code stores sessions per
+        // directory, so the current workspace folder would look in the wrong place.
+        // Agents created before cwd was tracked fall back to the current folder.
+        cwd: this.agentCwds.get(agentId) ?? this.cwd,
         resume: this.sdkSessionIds.get(agentId),
       });
       this.sessions.set(agentId, session);
@@ -417,6 +430,7 @@ export class AgentManager {
     this.cards.delete(agentId);
     this.transcripts.delete(agentId);
     this.sdkSessionIds.delete(agentId);
+    this.agentCwds.delete(agentId);
     this.notify();
     this.flush();
   }

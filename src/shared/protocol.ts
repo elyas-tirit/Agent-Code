@@ -321,7 +321,7 @@ export type ClientMessage =
   | { type: "nav/back" }
   | { type: "mode/set"; mode: PermissionMode }
   | { type: "permission/respond"; id: string; decision: PermissionDecision }
-  | { type: "question/respond"; id: string; answers: QuestionAnswers }
+  | { type: "question/respond"; id: string; answers: QuestionAnswers; summary?: string }
   | { type: "plan/respond"; id: string; approve: boolean }
   | { type: "design/mode"; mode: DesignMode }
   | { type: "design/setUrl"; url: string }

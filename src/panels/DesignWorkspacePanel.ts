@@ -269,6 +269,11 @@ export class DesignWorkspacePanel {
       }
       case "question/respond": {
         const s = await this.ensureSession();
+        // Persist the user's answer in the transcript so it survives reopen (the
+        // webview already shows it optimistically).
+        if (this.agentId && message.summary) {
+          this.manager.appendUserMessage(this.agentId, message.summary);
+        }
         s.answerQuestion(message.id, message.answers);
         this.state.pendingQuestion = undefined;
         break;

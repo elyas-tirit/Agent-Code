@@ -183,6 +183,8 @@ class ClaudeSession implements AgentSession {
   private sessionId?: string;
   /** When resuming, the SDK re-emits history — suppress it until the next send. */
   private suppressReplay = false;
+  /** Guards the one-shot resume→fresh recovery so we don't loop. */
+  private recovered = false;
 
   constructor(
     private sdk: { query: (args: unknown) => any },
@@ -420,8 +422,25 @@ class ClaudeSession implements AgentSession {
         .catch(() => {});
       for await (const message of this.queryHandle) this.handle(message);
     } catch (err) {
-      this.emit({ kind: "error", message: err instanceof Error ? err.message : String(err) });
-      this.emit({ kind: "status", status: "error" });
+      const msg = err instanceof Error ? err.message : String(err);
+      // Resume target gone (cwd mismatch, pruned history, …) → don't brick the
+      // agent: restart fresh in the same cwd. The visible transcript is preserved
+      // (we keep it ourselves), only Claude's server-side context is reset.
+      if (opts.resume && !this.recovered && /no conversation found|session id/i.test(msg)) {
+        this.recovered = true;
+        this.suppressReplay = false;
+        this.sessionId = undefined;
+        this.emit({
+          kind: "text",
+          delta:
+            "\n_(La sessione precedente non era ripristinabile, riparto pulito in questo progetto — la cronologia qui sopra resta visibile.)_\n",
+        });
+        this.emit({ kind: "done" });
+        void this.run({ ...opts, resume: undefined });
+        return;
+      }
+      this.emit({ kind: "error", message: msg });
+      this.emit({ kind: "status", status: "idle" });
     }
   }
 
