@@ -14,6 +14,8 @@ interface PreviewCanvasProps {
   reloadKey?: number;
   onSetUrl: (url: string) => void;
   onSelect: (component: SelectedComponent) => void;
+  /** Collapse the whole preview pane (toolbar included) — design mode only. */
+  onCollapse?: () => void;
 }
 
 interface Device {
@@ -86,7 +88,7 @@ function ToolbarButton({
   );
 }
 
-export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSelect }: PreviewCanvasProps) {
+export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSelect, onCollapse }: PreviewCanvasProps) {
   const iframeSrc = proxyUrl || url;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -404,6 +406,7 @@ export function PreviewCanvas({ mode, url, proxyUrl, reloadKey, onSetUrl, onSele
         </div>
 
         <ToolbarButton icon={fullscreen ? "minimize" : "maximize"} title="Schermo intero" onClick={toggleFullscreen} />
+        {onCollapse && <ToolbarButton icon="panel-left" title="Comprimi la preview" onClick={onCollapse} />}
       </div>
 
       {/* Canvas */}

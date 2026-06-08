@@ -9,9 +9,29 @@ import type {
   ToolCall,
   ToolDiff,
 } from "@shared/protocol";
-import { Icon, FigmaGlyph } from "../../ui/Icon";
+import { Icon, FigmaGlyph, IconName } from "../../ui/Icon";
 import { Md } from "../../ui/Markdown";
 import { Composer } from "./Composer";
+
+/** Copy an attachment: the image itself to the clipboard, or the file path / Figma URL. */
+async function copyAttachment(a: Attachment): Promise<void> {
+  try {
+    if (a.kind === "image" && a.dataUrl) {
+      const blob = await (await fetch(a.dataUrl)).blob();
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+    } else {
+      await navigator.clipboard.writeText(a.url || a.path || a.name);
+    }
+  } catch {
+    /* clipboard blocked in this context */
+  }
+}
+
+/** Re-attach a sent attachment back into the composer. The Composer listens for
+ *  `composer/attach` host messages, so we replay one locally (no host round-trip). */
+function reattach(a: Attachment): void {
+  window.dispatchEvent(new MessageEvent("message", { data: { type: "composer/attach", attachment: a } }));
+}
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -79,22 +99,109 @@ function ToolRow({ tool }: { tool: ToolCall }) {
   );
 }
 
-function MessageAttachments({ attachments }: { attachments: Attachment[] }) {
+function AttachActions({ a, onPreview }: { a: Attachment; onPreview: (a: Attachment) => void }) {
+  const Btn = ({ icon, title, onClick }: { icon: IconName; title: string; onClick: () => void }) => (
+    <button
+      title={title}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="flex size-6 items-center justify-center rounded-md bg-black/55 text-white/85 backdrop-blur-sm transition-colors hover:bg-black/80 hover:text-white"
+    >
+      <Icon name={icon} size={13} />
+    </button>
+  );
+  return (
+    <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      <Btn icon="eye" title="Anteprima" onClick={() => onPreview(a)} />
+      <Btn icon="paperclip" title="Riallega alla chat" onClick={() => reattach(a)} />
+      <Btn icon="copy" title="Copia" onClick={() => void copyAttachment(a)} />
+    </div>
+  );
+}
+
+function MessageAttachments({
+  attachments,
+  onPreview,
+}: {
+  attachments: Attachment[];
+  onPreview: (a: Attachment) => void;
+}) {
   return (
     <div className="mb-1.5 flex flex-wrap justify-end gap-1.5">
       {attachments.map((a) =>
         a.kind === "image" && a.dataUrl ? (
-          <img key={a.id} src={a.dataUrl} alt={a.name} className="size-16 rounded-lg object-cover ring-1 ring-white/15" />
+          <div key={a.id} className="group relative cursor-pointer" onClick={() => onPreview(a)}>
+            <img src={a.dataUrl} alt={a.name} className="size-16 rounded-lg object-cover ring-1 ring-white/15" />
+            <AttachActions a={a} onPreview={onPreview} />
+          </div>
         ) : (
-          <span
+          <div
             key={a.id}
-            className="flex items-center gap-1.5 rounded-lg bg-black/30 px-2 py-1 text-[11px] text-white/70 ring-1 ring-white/10"
+            onClick={() => onPreview(a)}
+            className="group relative flex cursor-pointer items-center gap-1.5 rounded-lg bg-black/30 py-1 pl-2 pr-[68px] text-[11px] text-white/70 ring-1 ring-white/10 hover:ring-white/20"
           >
             {a.kind === "figma" ? <FigmaGlyph size={13} /> : <Icon name="file" size={12} />}
-            {a.name}
-          </span>
+            <span className="max-w-[160px] truncate">{a.name}</span>
+            <AttachActions a={a} onPreview={onPreview} />
+          </div>
         ),
       )}
+    </div>
+  );
+}
+
+/** Full-bleed preview for an attachment (image lightbox / file + figma details). */
+function AttachmentLightbox({ att, onClose }: { att: Attachment; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="absolute inset-0 z-[70] flex items-center justify-center p-8" onClick={onClose}>
+      <div className="ac-fade-in absolute inset-0 bg-black/80 backdrop-blur-md" />
+      <div
+        className="ac-pop relative flex max-h-full max-w-full flex-col items-center gap-3"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {att.kind === "image" && att.dataUrl ? (
+          <img src={att.dataUrl} alt={att.name} className="max-h-[78vh] max-w-full rounded-xl shadow-2xl ring-1 ring-white/15" />
+        ) : (
+          <div className="flex w-[360px] max-w-full flex-col items-center gap-3 rounded-2xl border border-white/10 bg-[#161616] p-7 text-center">
+            <span className="flex size-14 items-center justify-center rounded-xl bg-black/40">
+              {att.kind === "figma" ? <FigmaGlyph size={26} /> : <Icon name="file" size={24} className="text-white/60" />}
+            </span>
+            <div className="text-[14px] font-medium text-white">{att.name}</div>
+            {(att.url || att.path) && (
+              <div className="max-w-full break-all rounded-lg bg-black/40 px-3 py-2 font-mono text-[11.5px] text-white/55">
+                {att.url || att.path}
+              </div>
+            )}
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => reattach(att)}
+            className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[12.5px] text-white/85 hover:bg-white/15"
+          >
+            <Icon name="paperclip" size={14} /> Riallega
+          </button>
+          <button
+            onClick={() => void copyAttachment(att)}
+            className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[12.5px] text-white/85 hover:bg-white/15"
+          >
+            <Icon name="copy" size={14} /> Copia
+          </button>
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[12.5px] text-white/85 hover:bg-white/15"
+          >
+            <Icon name="x" size={14} /> Chiudi
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -110,7 +217,6 @@ function ThinkingDots() {
 }
 
 function AssistantMessage({ message }: { message: ChatMessage }) {
-  const empty = !message.text && !message.reasoning && (!message.tools || message.tools.length === 0);
   return (
     <div className="ac-slide-up space-y-2">
       {message.reasoning && (
@@ -128,12 +234,6 @@ function AssistantMessage({ message }: { message: ChatMessage }) {
         <div className="text-[13px] leading-relaxed text-white/85">
           <Md text={message.text} />
           {message.streaming && <span className="ac-caret" />}
-        </div>
-      )}
-      {/* Just started — nothing to show yet: a gentle thinking shimmer. */}
-      {empty && message.streaming && (
-        <div className="flex items-center gap-2 text-[12.5px] text-white/45">
-          <ThinkingDots /> <span className="ac-text-shimmer font-medium">Sto pensando…</span>
         </div>
       )}
     </div>
@@ -154,6 +254,7 @@ export function ChatPanel({
   onOpenSettings,
 }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [preview, setPreview] = useState<Attachment | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -170,7 +271,9 @@ export function ChatPanel({
         {messages.map((m) =>
           m.role === "user" ? (
             <div key={m.id} className="ac-slide-up flex flex-col items-end">
-              {m.attachments && m.attachments.length > 0 && <MessageAttachments attachments={m.attachments} />}
+              {m.attachments && m.attachments.length > 0 && (
+                <MessageAttachments attachments={m.attachments} onPreview={setPreview} />
+              )}
               {m.text && (
                 <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-[#4067e8] px-3 py-2 text-[13px] text-white shadow-[0_4px_14px_-4px_rgba(64,103,232,0.6)]">
                   <Md text={m.text} />
@@ -228,8 +331,11 @@ export function ChatPanel({
           onModeChange={onModeChange}
           onOpenUsage={onOpenUsage}
           onOpenSettings={onOpenSettings}
+          onPreviewAttachment={setPreview}
         />
       </div>
+
+      {preview && <AttachmentLightbox att={preview} onClose={() => setPreview(null)} />}
     </div>
   );
 }

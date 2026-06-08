@@ -314,6 +314,9 @@ export class DesignWorkspacePanel {
         if (url?.trim()) this.post({ type: "composer/attach", attachment: figmaAttachment(url.trim()) });
         break;
       }
+      case "context/attachFigmaUrl":
+        if (message.url?.trim()) this.post({ type: "composer/attach", attachment: figmaAttachment(message.url.trim()) });
+        break;
       case "image/save": {
         const att = saveDataUrlImage(message.dataUrl, message.name);
         if (att) this.post({ type: "composer/attach", attachment: att });

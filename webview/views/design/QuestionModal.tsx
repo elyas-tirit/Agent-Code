@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type { QuestionAnswers, QuestionItem, QuestionRequest } from "@shared/protocol";
 import { Icon } from "../../ui/Icon";
+import { FloatingPanel } from "../../ui/FloatingPanel";
 
 interface QuestionModalProps {
   request: QuestionRequest;
   onRespond: (answers: QuestionAnswers) => void;
-  position?: "fixed" | "absolute";
+  onMinimize?: () => void;
 }
 
 interface QState {
@@ -124,7 +125,7 @@ function QuestionBlock({
   );
 }
 
-export function QuestionModal({ request, onRespond, position = "absolute" }: QuestionModalProps) {
+export function QuestionModal({ request, onRespond, onMinimize }: QuestionModalProps) {
   const [states, setStates] = useState<QState[]>(() => request.questions.map(() => ({ selected: [], other: "" })));
 
   const toggle = (qi: number, label: string) => {
@@ -182,51 +183,37 @@ export function QuestionModal({ request, onRespond, position = "absolute" }: Que
   });
 
   return (
-    <div className={`${position} inset-0 z-[60] flex items-center justify-center p-6`}>
-      <div className="ac-fade-in absolute inset-0 bg-black/65 backdrop-blur-md" />
-      <div
-        className="ac-pop relative flex max-h-[90%] w-[560px] max-w-[94%] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#141414]/95 shadow-[0_30px_90px_rgba(0,0,0,0.7)]"
-        style={{ boxShadow: "0 30px 90px rgba(0,0,0,0.7), 0 0 40px -16px #70fff3" }}
-      >
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-[#70fff3]/70 to-transparent" />
-        <div className="flex items-center gap-2.5 px-5 pb-3 pt-4">
-          <span className="flex size-7 items-center justify-center rounded-lg bg-[#70fff3]/15 text-[#70fff3]">
-            <Icon name="hand" size={16} />
-          </span>
-          <div className="text-[15px] font-medium text-white">Claude ha una domanda</div>
-        </div>
-
-        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 pb-5">
-          {request.questions.map((q, i) => (
-            <QuestionBlock
-              key={i}
-              q={q}
-              state={states[i]}
-              onToggle={(label) => toggle(i, label)}
-              onOther={(text) => setOther(i, text)}
-            />
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between gap-3 border-t border-white/10 px-5 py-3.5">
-          <span className="text-[11.5px] text-white/35">
-            {request.questions[0]?.options.length
-              ? "Usa 1–" + request.questions[0].options.length + " · Invio per confermare"
-              : "Invio per confermare"}
-          </span>
-          <button
-            onClick={submit}
-            disabled={!ready}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-[13.5px] font-medium transition-all ${
-              ready
-                ? "bg-gradient-to-r from-[#4067e8] to-[#70fff3] text-black shadow-[0_0_20px_-4px_#70fff3]"
-                : "cursor-not-allowed bg-white/10 text-white/40"
-            }`}
-          >
-            Conferma <Icon name="arrow-up" size={15} className="rotate-90" />
-          </button>
-        </div>
+    <FloatingPanel title="Claude ha una domanda" icon="hand" accent="#70fff3" width={560} onMinimize={onMinimize}>
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 pb-5 pt-1">
+        {request.questions.map((q, i) => (
+          <QuestionBlock
+            key={i}
+            q={q}
+            state={states[i]}
+            onToggle={(label) => toggle(i, label)}
+            onOther={(text) => setOther(i, text)}
+          />
+        ))}
       </div>
-    </div>
+
+      <div className="flex items-center justify-between gap-3 border-t border-white/10 px-5 py-3.5">
+        <span className="text-[11.5px] text-white/35">
+          {request.questions[0]?.options.length
+            ? "Usa 1–" + request.questions[0].options.length + " · Invio per confermare"
+            : "Invio per confermare"}
+        </span>
+        <button
+          onClick={submit}
+          disabled={!ready}
+          className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-[13.5px] font-medium transition-all ${
+            ready
+              ? "bg-gradient-to-r from-[#4067e8] to-[#70fff3] text-black shadow-[0_0_20px_-4px_#70fff3]"
+              : "cursor-not-allowed bg-white/10 text-white/40"
+          }`}
+        >
+          Conferma <Icon name="arrow-up" size={15} className="rotate-90" />
+        </button>
+      </div>
+    </FloatingPanel>
   );
 }

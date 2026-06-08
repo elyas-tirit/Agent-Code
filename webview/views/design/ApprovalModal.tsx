@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import type { PermissionDecision, PermissionRequest } from "@shared/protocol";
 import { Icon } from "../../ui/Icon";
+import { FloatingPanel } from "../../ui/FloatingPanel";
 
 interface ApprovalModalProps {
   request: PermissionRequest;
   onRespond: (decision: PermissionDecision) => void;
+  onMinimize?: () => void;
 }
 
 function Key({ children }: { children: string }) {
@@ -15,9 +17,11 @@ function Key({ children }: { children: string }) {
   );
 }
 
-export function ApprovalModal({ request, onRespond }: ApprovalModalProps) {
+export function ApprovalModal({ request, onRespond, onMinimize }: ApprovalModalProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
       if (e.key === "1" || e.key === "Enter") {
         e.preventDefault();
         onRespond("allow");
@@ -34,16 +38,10 @@ export function ApprovalModal({ request, onRespond }: ApprovalModalProps) {
   }, [request, onRespond]);
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-[440px] max-w-[90%] rounded-2xl border border-white/10 bg-[#161616] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
-        <div className="mb-3 flex items-center gap-2 text-[12px] font-medium uppercase tracking-wide text-[#4067e8]">
-          <Icon name="shield" size={15} />
-          Richiesta di approvazione
-        </div>
+    <FloatingPanel title="Richiesta di approvazione" icon="shield" accent="#4067e8" width={440} onMinimize={onMinimize}>
+      <div className="p-5">
         <p className="text-[15px] leading-snug text-white">{request.title}</p>
-        {request.description && (
-          <p className="mt-2 text-[13px] leading-relaxed text-white/55">{request.description}</p>
-        )}
+        {request.description && <p className="mt-2 text-[13px] leading-relaxed text-white/55">{request.description}</p>}
         <div className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-black/40 px-2 py-1 text-[12px] text-white/70">
           <Icon name="tool" size={13} />
           {request.displayName ?? request.toolName}
@@ -74,6 +72,6 @@ export function ApprovalModal({ request, onRespond }: ApprovalModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </FloatingPanel>
   );
 }

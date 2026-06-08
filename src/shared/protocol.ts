@@ -326,6 +326,7 @@ export type ClientMessage =
   | { type: "design/mode"; mode: DesignMode }
   | { type: "design/setUrl"; url: string }
   | { type: "design/selectComponent"; component: SelectedComponent }
+  | { type: "context/attachFigmaUrl"; url: string }
   | { type: "chat/send"; text: string; component?: SelectedComponent; attachments?: Attachment[] }
   | { type: "chat/clear" }
   | { type: "context/attach" }

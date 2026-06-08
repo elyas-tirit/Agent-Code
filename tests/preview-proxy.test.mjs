@@ -223,13 +223,14 @@ test("does not hang the client when an upgrade gets a non-101 reply", async () =
   }
 });
 
-test("returns a friendly 502 when the dev server is down", async () => {
+test("serves a friendly empty state (not an error) when the dev server is down", async () => {
   const proxy = new PreviewProxy(PICKER);
   const base = await proxy.start("http://127.0.0.1:1");
   try {
     const r = await get(base + "/");
-    assert.equal(r.status, 502);
-    assert.match(r.body, /Preview non raggiungibile/);
+    assert.equal(r.status, 200); // a welcoming placeholder, not a scary error page
+    assert.match(r.body, /In attesa del tuo frontend/);
+    assert.match(r.body, /setInterval/); // self-heals: reloads when the server comes up
   } finally {
     proxy.dispose();
   }

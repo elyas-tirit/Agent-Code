@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AgentSettings, AgentStatus, Attachment, PermissionMode } from "@shared/protocol";
 import { EFFORT_OPTIONS, MODEL_OPTIONS } from "@shared/protocol";
 import { Icon, IconName, FigmaGlyph } from "../../ui/Icon";
+import { FigmaModal } from "../../ui/FigmaModal";
 import { onHostMessage, post } from "../../vscode";
 
 const CYAN = "rgb(112,255,243)";
@@ -30,6 +31,7 @@ interface ComposerProps {
   onModeChange: (mode: PermissionMode) => void;
   onOpenUsage: () => void;
   onOpenSettings: () => void;
+  onPreviewAttachment?: (a: Attachment) => void;
 }
 
 function MenuItem({
@@ -68,9 +70,13 @@ function Popover({ children, onClose }: { children: React.ReactNode; onClose: ()
   );
 }
 
-function AttachmentChip({ att, onRemove }: { att: Attachment; onRemove: () => void }) {
+function AttachmentChip({ att, onRemove, onPreview }: { att: Attachment; onRemove: () => void; onPreview?: () => void }) {
   return (
-    <div className="ac-pop group relative flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] py-1.5 pl-1.5 pr-2 text-[12px] text-white/80">
+    <div
+      onClick={onPreview}
+      title={onPreview ? "Anteprima" : undefined}
+      className={`ac-pop group relative flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] py-1.5 pl-1.5 pr-2 text-[12px] text-white/80 ${onPreview ? "cursor-pointer hover:border-white/25" : ""}`}
+    >
       {att.kind === "image" && att.dataUrl ? (
         <img src={att.dataUrl} alt={att.name} className="size-8 rounded-md object-cover" />
       ) : att.kind === "figma" ? (
@@ -84,7 +90,10 @@ function AttachmentChip({ att, onRemove }: { att: Attachment; onRemove: () => vo
       )}
       <span className="max-w-[120px] truncate">{att.name}</span>
       <button
-        onClick={onRemove}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
         className="flex size-4 items-center justify-center rounded text-white/40 hover:bg-white/10 hover:text-white"
       >
         <Icon name="x" size={12} />
@@ -102,8 +111,11 @@ export function Composer({
   onModeChange,
   onOpenUsage,
   onOpenSettings,
+  onPreviewAttachment,
 }: ComposerProps) {
   const [draft, setDraft] = useState("");
+  const [focused, setFocused] = useState(false);
+  const [figmaOpen, setFigmaOpen] = useState(false);
   const [menu, setMenu] = useState<null | "context" | "settings">(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [files, setFiles] = useState<string[]>([]);
@@ -114,6 +126,9 @@ export function Composer({
   const meta = MODE_META[mode];
   const grad = gradientFor(mode);
   const working = status === "working" || status === "asking";
+  // The composer "stroke" is light + only present while you type or while Claude
+  // is working; it fades away when idle.
+  const active = focused || working;
   const hasText = draft.trim().length > 0;
   const canSend = hasText || attachments.length > 0;
   const sendActive = working || canSend;
@@ -205,8 +220,9 @@ export function Composer({
     <div
       className="relative rounded-[12px] p-px pt-[2px]"
       style={{
-        background: grad,
-        boxShadow: working ? `0 -7px 33px -15px #58b2ee, 0 0 22px -6px ${meta.color}` : "0 -7px 33px -15px #58b2ee",
+        background: active ? grad : "rgba(255,255,255,0.10)",
+        boxShadow: active ? `0 0 16px -9px ${meta.color}` : "none",
+        transition: "background .35s ease, box-shadow .35s ease",
       }}
       onDragOver={(e) => {
         e.preventDefault();
@@ -243,7 +259,12 @@ export function Composer({
         {attachments.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
             {attachments.map((a) => (
-              <AttachmentChip key={a.id} att={a} onRemove={() => setAttachments((list) => list.filter((x) => x.id !== a.id))} />
+              <AttachmentChip
+                key={a.id}
+                att={a}
+                onPreview={onPreviewAttachment ? () => onPreviewAttachment(a) : undefined}
+                onRemove={() => setAttachments((list) => list.filter((x) => x.id !== a.id))}
+              />
             ))}
           </div>
         )}
@@ -252,6 +273,8 @@ export function Composer({
           ref={taRef}
           value={draft}
           onChange={onDraftChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onPaste={onPaste}
           onKeyDown={(e) => {
             if (e.key === "Escape" && mention) {
@@ -284,7 +307,7 @@ export function Composer({
                 <div className="px-2 pb-1 pt-1 text-[11px] uppercase tracking-wide text-white/35">Contesto</div>
                 <MenuItem icon="image" label="Allega immagine…" onClick={() => { post({ type: "context/attachImage" }); setMenu(null); }} />
                 <MenuItem icon="paperclip" label="Allega file…" onClick={() => { post({ type: "context/attach" }); setMenu(null); }} />
-                <MenuItem glyph={<FigmaGlyph size={15} />} label="Allega file Figma…" onClick={() => { post({ type: "context/attachFigma" }); setMenu(null); }} />
+                <MenuItem glyph={<FigmaGlyph size={15} />} label="Allega file Figma…" onClick={() => { setFigmaOpen(true); setMenu(null); }} />
                 <MenuItem icon="folder" label="Menziona file dal progetto…" onClick={() => { post({ type: "context/mention" }); setMenu(null); }} />
                 <div className="my-1 h-px bg-white/10" />
                 <MenuItem icon="trash" label="Pulisci conversazione" onClick={() => { post({ type: "chat/clear" }); setMenu(null); }} />
@@ -368,6 +391,13 @@ export function Composer({
           </button>
         </div>
       </div>
+
+      {figmaOpen && (
+        <FigmaModal
+          onSubmit={(url) => post({ type: "context/attachFigmaUrl", url })}
+          onClose={() => setFigmaOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -11,7 +11,8 @@ import type {
 } from "@shared/protocol";
 import { onHostMessage, post } from "../../vscode";
 import { SessionBadge } from "../dashboard/TopBar";
-import { Icon } from "../../ui/Icon";
+import { Icon, IconName } from "../../ui/Icon";
+import { MinimizedChip } from "../../ui/FloatingPanel";
 import { UsageModal } from "../../ui/UsageModal";
 import { SettingsModal } from "../../ui/SettingsModal";
 import { PreviewCanvas } from "./PreviewCanvas";
@@ -87,7 +88,16 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
   const [usageOpen, setUsageOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [previewCollapsed, setPreviewCollapsed] = useState(false);
+  const [minimized, setMinimized] = useState<Set<string>>(new Set());
   const [chatWidth, setChatWidth] = useState(420);
+  const mini = (id: string) => setMinimized((s) => new Set(s).add(id));
+  const unmini = (id: string) =>
+    setMinimized((s) => {
+      const n = new Set(s);
+      n.delete(id);
+      return n;
+    });
   const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -207,6 +217,8 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
   }, []);
 
   const isPreviewFull = state.designMode === "preview";
+  // Fully collapse the web preview (toolbar included) — only in Design mode.
+  const collapsed = state.designMode === "design" && previewCollapsed;
   const left =
     state.designMode === "code" ? (
       <CodeView />
@@ -224,6 +236,7 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
           setSelected(component);
           post({ type: "design/selectComponent", component });
         }}
+        onCollapse={state.designMode === "design" ? () => setPreviewCollapsed(true) : undefined}
       />
     );
 
@@ -256,20 +269,37 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
 
       {/* Body */}
       <div ref={bodyRef} className="relative mt-3 flex min-h-0 flex-1 gap-0">
-        <div className="flex min-w-0 flex-1">{left}</div>
+        {!collapsed && <div className="flex min-w-0 flex-1">{left}</div>}
+
+        {/* Collapsed preview → a slim reopen tab. */}
+        {collapsed && (
+          <button
+            onClick={() => setPreviewCollapsed(false)}
+            title="Mostra la preview"
+            className="ac-fade-in mr-2 flex shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-2 py-4 text-white/55 transition-colors hover:border-[#70fff3]/40 hover:text-white"
+          >
+            <Icon name="panel-left" size={16} />
+            <span className="text-[11px] tracking-wide [writing-mode:vertical-rl]">Preview</span>
+          </button>
+        )}
 
         {!isPreviewFull && (
           <>
-            {/* Splitter */}
-            <div
-              onMouseDown={startDrag}
-              className="group relative mx-1 flex w-2 cursor-col-resize items-center justify-center"
-              title="Trascina per ridimensionare"
-            >
-              <div className="h-14 w-[3px] rounded-full bg-white/10 transition-colors group-hover:bg-[#70fff3]/70" />
-            </div>
+            {/* Splitter (hidden when the preview is collapsed) */}
+            {!collapsed && (
+              <div
+                onMouseDown={startDrag}
+                className="group relative mx-1 flex w-2 cursor-col-resize items-center justify-center"
+                title="Trascina per ridimensionare"
+              >
+                <div className="h-14 w-[3px] rounded-full bg-white/10 transition-colors group-hover:bg-[#70fff3]/70" />
+              </div>
+            )}
 
-            <div className="flex shrink-0 flex-col" style={{ width: chatWidth }}>
+            <div
+              className={collapsed ? "flex min-w-0 flex-1 flex-col" : "flex shrink-0 flex-col"}
+              style={collapsed ? undefined : { width: chatWidth }}
+            >
               <ChatPanel
                 messages={messages}
                 status={state.status}
@@ -290,18 +320,20 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
           </>
         )}
 
-        {pending && (
+        {pending && !minimized.has(pending.id) && (
           <ApprovalModal
             request={pending}
+            onMinimize={() => mini(pending.id)}
             onRespond={(decision) => {
               post({ type: "permission/respond", id: pending.id, decision });
               setPending(undefined);
             }}
           />
         )}
-        {question && (
+        {question && !minimized.has(question.id) && (
           <QuestionModal
             request={question}
+            onMinimize={() => mini(question.id)}
             onRespond={(answers) => {
               // Echo the answer into the chat so it's visible + persisted (the
               // modal otherwise vanishes with no trace of what you chose).
@@ -314,15 +346,30 @@ export function DesignWorkspace({ initial }: { initial?: DesignState }) {
             }}
           />
         )}
-        {plan && (
+        {plan && !minimized.has(plan.id) && (
           <PlanModal
             request={plan}
+            onMinimize={() => mini(plan.id)}
             onRespond={(approve) => {
               post({ type: "plan/respond", id: plan.id, approve });
               setPlan(undefined);
             }}
           />
         )}
+
+        {/* Minimized request modals → reopenable chips, stacked bottom-right. */}
+        {(() => {
+          const chips: { id: string; label: string; icon: IconName; accent: string; restore: () => void }[] = [];
+          if (pending && minimized.has(pending.id))
+            chips.push({ id: pending.id, label: "Approvazione", icon: "shield", accent: "#4067e8", restore: () => unmini(pending.id) });
+          if (question && minimized.has(question.id))
+            chips.push({ id: question.id, label: "Domanda", icon: "hand", accent: "#70fff3", restore: () => unmini(question.id) });
+          if (plan && minimized.has(plan.id))
+            chips.push({ id: plan.id, label: "Piano", icon: "list-checks", accent: "#70ff8b", restore: () => unmini(plan.id) });
+          return chips.map((c, i) => (
+            <MinimizedChip key={c.id} index={i} label={c.label} icon={c.icon} accent={c.accent} onRestore={c.restore} />
+          ));
+        })()}
         {usageOpen && (
           <UsageModal
             usage={state.usage}

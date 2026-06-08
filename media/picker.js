@@ -1,6 +1,5 @@
 // Agent Code — element picker (Cursor-style). Runs INSIDE the previewed page.
-// Auto-injected when same-origin; for cross-origin dev servers add
-//   <script src="/picker.js"></script>  to your app in development.
+// Injected automatically by the preview proxy (it splices this into the HTML).
 // Hover highlights the element + its React component; click sends the element,
 // its text, CSS selector AND the React component name + source (file:line) to
 // the host so Claude knows exactly what you mean.
@@ -91,9 +90,11 @@
     b.style.top = r.top + "px";
     b.style.width = r.width + "px";
     b.style.height = r.height + "px";
-    b.__lab.textContent = fi.component
-      ? "<" + fi.component + ">" + (fi.source ? "  " + fi.source : "")
-      : "<" + el.tagName.toLowerCase() + ">" + (el.id ? "#" + el.id : "");
+    var size = "  " + Math.round(r.width) + "×" + Math.round(r.height);
+    b.__lab.textContent =
+      (fi.component
+        ? "<" + fi.component + ">" + (fi.source ? "  " + fi.source : "")
+        : "<" + el.tagName.toLowerCase() + ">" + (el.id ? "#" + el.id : "")) + size;
   }
 
   function click(e) {
