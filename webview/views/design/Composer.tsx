@@ -15,12 +15,14 @@ const MODE_META: Record<PermissionMode, { label: string; icon: IconName; color: 
   bypassPermissions: { label: "Auto", icon: "zap", color: "rgb(64,103,232)" },
 };
 const CYCLE: PermissionMode[] = ["default", "plan", "acceptEdits", "bypassPermissions"];
-const MODE_HINT: Record<PermissionMode, string> = {
-  default: t("Ask — asks for confirmation before every action", "Ask — chiede conferma per ogni azione"),
-  plan: t("Plan — plans without changing anything", "Plan — pianifica senza modificare nulla"),
-  acceptEdits: t("Edit Auto — accepts file edits", "Edit Auto — accetta le modifiche ai file"),
-  bypassPermissions: t("Auto — no confirmation (full auto)", "Auto — nessuna conferma (full auto)"),
-};
+// Computed at call time (not module load) so the tooltip follows a live language switch.
+const modeHint = (m: PermissionMode): string =>
+  ({
+    default: t("Ask — asks for confirmation before every action", "Ask — chiede conferma per ogni azione"),
+    plan: t("Plan — plans without changing anything", "Plan — pianifica senza modificare nulla"),
+    acceptEdits: t("Edit Auto — accepts file edits", "Edit Auto — accetta le modifiche ai file"),
+    bypassPermissions: t("Auto — no confirmation (full auto)", "Auto — nessuna conferma (full auto)"),
+  })[m];
 const gradientFor = (m: PermissionMode) => `linear-gradient(90deg, ${MODE_META[m].color} 0%, ${CYAN} 100%)`;
 
 interface ComposerProps {
@@ -368,7 +370,7 @@ export function Composer({
             {/* mode pill */}
             <button
               onClick={cycleMode}
-              title={MODE_HINT[mode]}
+              title={modeHint(mode)}
               className="flex h-[35px] items-center gap-1.5 rounded-full px-2 transition-transform hover:scale-[1.03]"
             >
               <Icon name={meta.icon} size={17} className="shrink-0" style={{ color: meta.color }} />

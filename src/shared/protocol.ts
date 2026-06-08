@@ -24,11 +24,13 @@ export interface AgentSettings {
   effort: EffortLevel;
 }
 
+// `hint` is the English source; the webview localizes it at render time (it can't
+// import the webview t() here — protocol is shared with the extension host).
 export const PERMISSION_MODES: { id: PermissionMode; label: string; hint: string }[] = [
-  { id: "default", label: "Default", hint: "Chiede conferma per ogni azione" },
-  { id: "plan", label: "Plan", hint: "Pianifica senza modificare nulla" },
-  { id: "acceptEdits", label: "Auto-edit", hint: "Accetta le modifiche ai file" },
-  { id: "bypassPermissions", label: "Auto", hint: "Nessuna conferma (full auto)" },
+  { id: "default", label: "Default", hint: "Asks for confirmation on every action" },
+  { id: "plan", label: "Plan", hint: "Plans without changing anything" },
+  { id: "acceptEdits", label: "Auto-edit", hint: "Auto-accepts file edits" },
+  { id: "bypassPermissions", label: "Auto", hint: "No confirmation (full auto)" },
 ];
 
 export type CardAccent = "blue" | "yellow" | "neutral" | "red";

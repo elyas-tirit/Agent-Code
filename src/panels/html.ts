@@ -41,7 +41,7 @@ export function getWebviewHtml(
   }).replace(/</g, "\\u003c");
 
   return `<!DOCTYPE html>
-<html lang="it">
+<html lang="${getHostLang()}">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="${csp}" />

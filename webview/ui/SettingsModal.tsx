@@ -30,6 +30,14 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
 
 const Divider = () => <div className="my-1 h-px bg-white/[0.07]" />;
 
+// Italian for the permission-mode tooltips (English source lives in protocol.ts).
+const MODE_HINT_IT: Record<string, string> = {
+  default: "Chiede conferma per ogni azione",
+  plan: "Pianifica senza modificare nulla",
+  acceptEdits: "Accetta le modifiche ai file",
+  bypassPermissions: "Nessuna conferma (full auto)",
+};
+
 export function SettingsModal({ onClose, position = "fixed" }: { onClose: () => void; position?: "fixed" | "absolute" }) {
   const [s, setS] = useState<AppSettings | null>(null);
 
@@ -84,7 +92,7 @@ export function SettingsModal({ onClose, position = "fixed" }: { onClose: () => 
                 <button
                   key={m.id}
                   onClick={() => patch({ defaultMode: m.id as PermissionMode })}
-                  title={m.hint}
+                  title={t(m.hint, MODE_HINT_IT[m.id] ?? m.hint)}
                   className={`rounded-md px-2.5 py-1 text-[11.5px] transition-colors ${
                     s.defaultMode === m.id ? "bg-[#4067e8] text-white" : "bg-white/5 text-white/60 hover:text-white"
                   }`}
