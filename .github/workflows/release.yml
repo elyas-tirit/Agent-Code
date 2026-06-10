@@ -1,0 +1,102 @@
+# Release workflow for Agent Code.
+#
+# Trigger model: push to `main`, only if `package.json` changed (cheap path filter
+# so doc-only commits don't spin up CI). Inside, we read the current version from
+# package.json and check whether a release `v<version>` already exists:
+#   - exists → do nothing (typical: package.json was edited but version wasn't bumped)
+#   - missing → build + package + create the GitHub Release with the .vsix attached
+#
+# Once the release is published, every installed copy of the extension will pick it
+# up via the in-extension check (src/update/checkForUpdate.ts) and prompt the user
+# to install. Net effect: bump version in package.json → push → all users update.
+#
+# Manual fallback: workflow_dispatch lets you force a build for a specific version
+# (useful for hotfixes, re-runs after a CI flake, or to ship a release that was
+# accidentally skipped).
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (without leading v, e.g. 0.1.0). Must match package.json."
+        required: true
+        type: string
+
+permissions:
+  contents: write # needed by `gh release create` to create the tag + release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Read version from package.json
+        id: version
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          INPUT_VERSION="${{ github.event.inputs.version }}"
+          if [ -n "$INPUT_VERSION" ] && [ "$INPUT_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::workflow_dispatch input ($INPUT_VERSION) does not match package.json ($PKG_VERSION). Bump package.json first."
+            exit 1
+          fi
+          echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$PKG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$PKG_VERSION"
+
+      - name: Check if release already exists
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release ${{ steps.version.outputs.tag }} already exists — skipping. Bump package.json to ship a new version."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.check.outputs.exists == 'false'
+        run: npm ci
+
+      - name: Typecheck
+        if: steps.check.outputs.exists == 'false'
+        run: npm run typecheck
+
+      - name: Test
+        if: steps.check.outputs.exists == 'false'
+        run: npm test
+
+      - name: Package
+        # `npm run package` runs the full build then `vsce package -o agent-code.vsix`.
+        if: steps.check.outputs.exists == 'false'
+        run: npm run package
+
+      - name: Create GitHub Release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          # Versioned filename helps people who download manually.
+          VERSIONED="agent-code-${TAG}.vsix"
+          cp agent-code.vsix "$VERSIONED"
+          gh release create "$TAG" "$VERSIONED" \
+            --title "Agent Code $TAG" \
+            --generate-notes \
+            --target "$GITHUB_SHA"

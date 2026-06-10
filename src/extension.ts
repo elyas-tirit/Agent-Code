@@ -8,6 +8,7 @@ import { AgentsDashboardPanel } from "./panels/AgentsDashboardPanel";
 import { DesignWorkspacePanel } from "./panels/DesignWorkspacePanel";
 import { JsonFileStore } from "./persistence";
 import { resolveLang, setHostLang, t } from "./i18n";
+import { checkForUpdate } from "./update/checkForUpdate";
 
 let manager: AgentManager | undefined;
 let managerPromise: Promise<AgentManager> | undefined;
@@ -219,7 +220,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       AgentsDashboardPanel.createOrShow(context, await getManager(context));
       await vscode.commands.executeCommand("workbench.action.toggleZenMode");
     }),
+    vscode.commands.registerCommand("agentCode.checkForUpdatesNow", () =>
+      checkForUpdate(context, { force: true }),
+    ),
   );
+
+  // Update check: fire-and-forget after a short delay so it never delays activation
+  // or competes with the dashboard opening. Throttled to once per 6h internally.
+  setTimeout(() => void checkForUpdate(context), 3000);
 
   // On window reload, revive the dashboard (with restored agents) and drop dead
   // design tabs instead of leaving "cannot restore" placeholders.

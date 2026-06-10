@@ -2,7 +2,7 @@
   "name": "agent-code",
   "displayName": "Agent Code",
   "description": "Designer-friendly VS Code mod: multi-agent dashboard + Design/Preview/Code workspace, powered by the Claude Agent SDK.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "elyas-tirit",
   "author": "Elyas Tirit",
   "license": "MIT",
@@ -43,6 +43,11 @@
       {
         "command": "agentCode.toggleImmersive",
         "title": "Agent Code: Immersive Mode (full screen)",
+        "category": "Agent Code"
+      },
+      {
+        "command": "agentCode.checkForUpdatesNow",
+        "title": "Agent Code: Check for Updates",
         "category": "Agent Code"
       }
     ],
@@ -134,6 +139,11 @@
           "type": "string",
           "default": "http://127.0.0.1:3845/sse",
           "description": "Figma desktop Dev-Mode MCP server URL. Lets agents pull Figma designs when you attach a Figma link. Enable 'Dev Mode MCP server' in Figma > Preferences. Leave empty to disable."
+        },
+        "agentCode.checkForUpdates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Check GitHub Releases for a newer Agent Code .vsix once every 6 hours and prompt to install. Updates are downloaded from the official repo (elyas-tirit/Agent-Code)."
         }
       }
     }
