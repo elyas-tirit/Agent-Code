@@ -21,3 +21,10 @@ INSTALL.md
 *.vsix
 *.zip
 .share/**
+CLAUDE.md
+.github/**
+# Platform-specific `claude` CLI binaries (~210 MB each). The SDK gets the path
+# to the user's globally-installed `claude` CLI via `pathToClaudeCodeExecutable`
+# (see ClaudeAgentBackend.ts), so these node_modules copies are dead weight —
+# and they'd be wrong-platform anyway (CI builds on Linux, users are on macOS/Win).
+node_modules/@anthropic-ai/claude-agent-sdk-*/**
