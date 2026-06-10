@@ -1,0 +1,31 @@
+{
+  "version": "0.0.6",
+  "releasedAt": "2026-06-10",
+  "tagline": "Plan mode actually works now, and the usage modal surfaces real rate-limit info instead of staying half-blind.",
+  "highlights": [
+    { "emoji": "🛠", "text": "Plan-mode \"Approve\" now executes the plan", "accent": "blue" },
+    { "emoji": "📊", "text": "Live reset countdown + status chips on usage", "accent": "cyan" },
+    { "emoji": "🧯", "text": "Overage state finally surfaced", "accent": "amber" }
+  ],
+  "sections": [
+    {
+      "id": "plan-mode-approve",
+      "emoji": "🛠",
+      "title": "Plan-mode \"Approve\" actually executes the plan",
+      "subtitle": "Clicking Approve in plan mode no longer leaves the agent stuck.",
+      "accent": "blue",
+      "badge": { "label": "fix", "accent": "amber" },
+      "body": "Until now, approving a plan from the modal would resolve the SDK's `ExitPlanMode` tool but the underlying permission state stayed pinned to **plan**, so the very next tool the agent tried (Write/Edit/Bash) got blocked — looking, from the outside, as if the approval had been denied.\n\nNow approving the plan also **explicitly transitions the agent to `acceptEdits`** (matching how Claude Code itself behaves after plan approval): file edits flow without re-prompting, anything else still asks. \"Keep planning\" stays — pick that when you want to refine the plan instead of executing it.",
+      "techDetails": "`ClaudeAgentBackend.respondPlan` now calls `queryHandle.setPermissionMode('acceptEdits')` immediately after resolving the `ExitPlanMode` permission with `behavior: 'allow'`, and emits a mode event so the composer pill in the UI reflects the new state. The \"deny\" branch was also reworded in English (`\"User wants to keep planning. Refine the plan; do not exit plan mode.\"`) so the model parses the rejection cleanly."
+    },
+    {
+      "id": "usage-real-info",
+      "emoji": "📊",
+      "title": "Usage modal: real-time countdown + status chips",
+      "subtitle": "We can't show a \"Session 47%\" the SDK refuses to send, but we can show everything else.",
+      "accent": "cyan",
+      "body": "Anthropic's SDK exposes `rate_limit_info` on every turn. For Team accounts the **`utilization` percentage is omitted server-side** — Claude.ai's own UI gets it through a separate authenticated endpoint we can't reach from inside VS Code. So no, we can't invent a fake %. But we were also ignoring 4 fields that ARE sent. Now you see them:\n\n- **Status chip** per window: *Under limit* / *Approaching limit* / *Over limit* — colored green/amber/red.\n- **Threshold bar** when the SDK signals you've crossed 80%/90% (rendered as `≥80%`, honest about its precision).\n- **Live reset countdown**: `Resets in 2h 39m` updates every minute, instead of staying frozen at whatever it said when the modal opened.\n- **Overage state**: if you're using overage, the reset clock for it; otherwise, the reason it's unavailable (`disabled by org`, `out of credits`, etc.).",
+      "techDetails": "`RateWindow` in `protocol.ts` gained `status` / `resetsAt` / `surpassedThreshold` / `overage` fields. `ClaudeAgentBackend.rateWindow` populates them from `SDKRateLimitInfo` (see `sdk.d.ts:3527`). The `rate_limit_event` of type `overage` is now folded into the five-hour window's `overage` field instead of being dropped. The webview adds a `useCountdown(resetsAt)` hook ticking once a minute (passive in cost, accurate to 60 s). All values come from the SDK — no inference, no fakes."
+    }
+  ]
+}

@@ -101,13 +101,37 @@ const STATUS_LABELS: Record<string, string> = {
 function rateWindow(info: any): RateWindow {
   const hasUtil = typeof info?.utilization === "number";
   const raw = hasUtil ? info.utilization : 0;
+  const status: "allowed" | "allowed_warning" | "rejected" | undefined =
+    info?.status === "allowed" || info?.status === "allowed_warning" || info?.status === "rejected"
+      ? info.status
+      : undefined;
+  const resetsAt = typeof info?.resetsAt === "number" ? info.resetsAt : undefined;
+  const surpassedThreshold =
+    typeof info?.surpassedThreshold === "number" ? info.surpassedThreshold : undefined;
+  // Overage info travels under the same rate_limit_info on the primary window —
+  // expose it so the UI can flag "you're in overage" + show when overage resets.
+  const overage =
+    info?.overageStatus || typeof info?.isUsingOverage === "boolean"
+      ? {
+          status:
+            (info?.overageStatus as "allowed" | "allowed_warning" | "rejected") ?? "allowed",
+          isUsing: !!info?.isUsingOverage,
+          resetsAt: typeof info?.overageResetsAt === "number" ? info.overageResetsAt : undefined,
+          disabledReason:
+            typeof info?.overageDisabledReason === "string" ? info.overageDisabledReason : undefined,
+        }
+      : undefined;
   return {
     type: info?.rateLimitType ?? "five_hour",
     label: windowLabel(info?.rateLimitType ?? "five_hour"),
     percent: Math.round(raw <= 1 ? raw * 100 : raw),
     resetsInLabel: resetsLabel(info?.resetsAt),
     known: hasUtil,
-    statusLabel: typeof info?.status === "string" ? STATUS_LABELS[info.status] ?? info.status : undefined,
+    statusLabel: status ? STATUS_LABELS[status] ?? status : undefined,
+    status,
+    resetsAt,
+    surpassedThreshold,
+    overage,
   };
 }
 
@@ -253,8 +277,25 @@ class ClaudeSession implements AgentSession {
     const p = this.plans.get(id);
     if (!p) return;
     this.plans.delete(id);
-    if (approve) p.resolve({ behavior: "allow" }); // exits plan mode → executes
-    else p.resolve({ behavior: "deny", message: "Non uscire dal piano: continua a pianificare." });
+    if (approve) {
+      p.resolve({ behavior: "allow" });
+      // The SDK does NOT auto-transition `permissionMode` out of "plan" after
+      // ExitPlanMode runs — verified empirically. Without this, the model
+      // executes a few steps then the next `canUseTool` for a write/bash gets
+      // blocked because we're still in plan mode at the CLI level. Force the
+      // transition explicitly: acceptEdits matches Claude Code's own UX
+      // (file edits flow, anything else still prompts).
+      this.mode = "acceptEdits";
+      void this.queryHandle?.setPermissionMode?.("acceptEdits");
+      this.emit({ kind: "mode", mode: "acceptEdits" });
+    } else {
+      // English so the model parses the rejection cleanly. The model will see
+      // this as a system-style nudge and refine the plan further.
+      p.resolve({
+        behavior: "deny",
+        message: "User wants to keep planning. Refine the plan; do not exit plan mode.",
+      });
+    }
     this.openReq.delete(id);
     this.emit({ kind: "plan-dismiss", id });
   }
@@ -497,11 +538,27 @@ class ClaudeSession implements AgentSession {
       }
       case "rate_limit_event": {
         const info = message.rate_limit_info;
-        // Keep every window except raw overage; the usage modal shows them all.
-        if (info && info.rateLimitType !== "overage") {
-          const w = rateWindow(info);
-          this.windows.set(w.type, w);
-          this.emitUsage();
+        if (info) {
+          if (info.rateLimitType === "overage") {
+            // Overage isn't really a "window" — it's overflow state. Fold it
+            // into the five-hour window's `overage` field so the UI shows
+            // both pieces of info together instead of a stray bar.
+            const fh = this.windows.get("five_hour");
+            if (fh) {
+              fh.overage = {
+                status: (info.overageStatus as "allowed" | "allowed_warning" | "rejected") ?? "allowed",
+                isUsing: !!info.isUsingOverage,
+                resetsAt: typeof info.overageResetsAt === "number" ? info.overageResetsAt : undefined,
+                disabledReason:
+                  typeof info.overageDisabledReason === "string" ? info.overageDisabledReason : undefined,
+              };
+              this.emitUsage();
+            }
+          } else {
+            const w = rateWindow(info);
+            this.windows.set(w.type, w);
+            this.emitUsage();
+          }
         }
         break;
       }

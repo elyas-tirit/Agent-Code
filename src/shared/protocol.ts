@@ -156,6 +156,25 @@ export interface RateWindow {
   known: boolean;
   /** Human status when no % is provided (e.g. "Sotto i limiti"). */
   statusLabel?: string;
+  /**
+   * SDK status — surfaced even when `utilization` is not provided (Team plans
+   * don't get the % but DO get the status flag). Lets the UI render a chip
+   * ("Approaching limit" / "Over limit") instead of leaving the user blind.
+   */
+  status?: "allowed" | "allowed_warning" | "rejected";
+  /** Unix seconds of reset — kept alongside `resetsInLabel` so the webview
+   *  can run a live countdown instead of a static "in 2h 40m". */
+  resetsAt?: number;
+  /** Last threshold the SDK reported as surpassed (0.5, 0.8, 0.9…). Useful for
+   *  coloring even when `percent` is not available. */
+  surpassedThreshold?: number;
+  /** Overage state for this window (only relevant on five-hour today). */
+  overage?: {
+    status: "allowed" | "allowed_warning" | "rejected";
+    isUsing: boolean;
+    resetsAt?: number;
+    disabledReason?: string;
+  };
 }
 
 /** Authenticated account info (from the SDK's accountInfo()). */
