@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import type { ChangelogBundle, DashboardState, DesignState } from "@shared/protocol";
+import type { DashboardState, DesignState } from "@shared/protocol";
 import { bootstrap, post, onHostMessage, LANG } from "./vscode";
 import { setLang, type Lang } from "./i18n";
 import { AgentsDashboard } from "./views/dashboard/AgentsDashboard";
 import { DesignWorkspace } from "./views/design/DesignWorkspace";
-import { ChangelogView } from "./views/changelog/ChangelogView";
 
 setLang(LANG); // apply the host-resolved language before the first render
 
@@ -26,8 +25,7 @@ export function App() {
   if (bootstrap.view === "design") {
     return <DesignWorkspace initial={bootstrap.state as DesignState | undefined} />;
   }
-  if (bootstrap.view === "changelog") {
-    return <ChangelogView initial={bootstrap.state as ChangelogBundle | undefined} />;
-  }
+  // The "changelog" data isn't a top-level view anymore — it's an overlay
+  // rendered by AgentsDashboard when the host posts a `changelog/show` message.
   return <AgentsDashboard initial={bootstrap.state as DashboardState | undefined} />;
 }

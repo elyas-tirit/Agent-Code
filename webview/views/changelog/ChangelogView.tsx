@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ChangelogBundle, Changelog } from "@shared/protocol";
 import { post } from "../../vscode";
 import { t } from "../../i18n";
@@ -6,47 +6,105 @@ import { SectionCard } from "./SectionCard";
 import { accentTokens } from "./accents";
 
 /**
- * "What's New" panel. Renders one or more `Changelog` entries (one per version
- * the user skipped, newest first). The host fed us the bundle in the `init`
- * message; clicking "Got it" or closing the panel marks the current version as
- * seen, "Don't show again" disables the post-update auto-open.
+ * "What's New" overlay rendered on top of the agents dashboard after an update.
+ *
+ * Why an overlay (not a separate webview panel): a `vscode.WebviewPanel` always
+ * opens as an editor tab. Patch notes are a notification, not a workspace —
+ * they belong *over* the dashboard, not next to it. So we render here as a
+ * modal-style overlay (backdrop + centered card with internal scroll) inside
+ * the dashboard webview.
  */
-export function ChangelogView({ initial }: { initial?: ChangelogBundle }) {
-  const [bundle] = useState<ChangelogBundle | undefined>(initial);
-  if (!bundle || !bundle.entries.length) {
-    return <Empty />;
-  }
+export function ChangelogOverlay({
+  bundle,
+  onClose,
+}: {
+  bundle: ChangelogBundle;
+  onClose: () => void;
+}) {
+  const close = (markSeen: boolean) => {
+    if (markSeen) post({ type: "changelog/markSeen", version: bundle.current });
+    onClose();
+  };
+
+  // ESC dismisses and marks as seen (matches how every other modal in this app
+  // closes — and the host treats "panel disposed" as "user has seen it").
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!bundle.entries.length) return null;
+
   return (
-    <div className="min-h-screen p-8 md:p-12 overflow-y-auto" style={{ background: "#0e0e0e" }}>
-      <Background />
-      <div className="ac-fade-in max-w-[900px] mx-auto relative">
-        {bundle.entries.map((entry, i) => (
-          <Entry key={entry.version} entry={entry} primary={i === 0} />
-        ))}
-        <Footer current={bundle.current} />
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8">
+      {/* Backdrop — click closes (treats as seen, like ESC) */}
+      <div
+        className="ac-fade-in absolute inset-0 bg-black/60 backdrop-blur-md"
+        onClick={() => close(true)}
+      />
+
+      {/* Card frame */}
+      <div
+        className="ac-scale-in relative flex max-h-[92vh] w-full max-w-[920px] flex-col overflow-hidden rounded-[22px] border"
+        style={{
+          background: "linear-gradient(180deg, #131313 0%, #0c0c0c 100%)",
+          borderColor: "rgba(255, 255, 255, 0.08)",
+          boxShadow:
+            "0 30px 80px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.04) inset",
+        }}
+      >
+        {/* Accent top hairline */}
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-[#70fff3]/60 to-transparent" />
+
+        {/* Scrollable content — header + highlights + sections live inside */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {bundle.entries.map((entry, i) => (
+            <Entry
+              key={entry.version}
+              entry={entry}
+              primary={i === 0}
+              onClose={() => close(true)}
+            />
+          ))}
+        </div>
+
+        {/* Sticky footer pinned to the bottom of the card */}
+        <Footer current={bundle.current} onClose={close} />
       </div>
     </div>
   );
 }
 
-function Entry({ entry, primary }: { entry: Changelog; primary: boolean }) {
+function Entry({
+  entry,
+  primary,
+  onClose,
+}: {
+  entry: Changelog;
+  primary: boolean;
+  onClose: () => void;
+}) {
   return (
-    <section
-      className="mb-8 relative rounded-[22px] overflow-hidden ac-frame-bg"
-      style={{
-        background: "linear-gradient(180deg, #131313 0%, #0c0c0c 100%)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
-        boxShadow: "0 25px 80px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.04) inset",
-      }}
-    >
-      <Header entry={entry} primary={primary} />
+    <section>
+      <Header entry={entry} primary={primary} onClose={onClose} />
 
       {entry.highlights.length > 0 ? (
-        <div className="px-8 pt-6 pb-4">
+        <div className="px-7 pt-5 pb-3">
           <div className="flex items-center gap-2 mb-3">
             <span
               className="text-[11px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(112, 255, 243, 0.1)", color: "#70fff3", border: "1px solid rgba(112, 255, 243, 0.25)" }}
+              style={{
+                background: "rgba(112, 255, 243, 0.1)",
+                color: "#70fff3",
+                border: "1px solid rgba(112, 255, 243, 0.25)",
+              }}
             >
               {t("Highlights", "In sintesi")}
             </span>
@@ -78,7 +136,7 @@ function Entry({ entry, primary }: { entry: Changelog; primary: boolean }) {
         </div>
       ) : null}
 
-      <div className="px-8 pt-2 pb-8 space-y-5 ac-stagger">
+      <div className="px-7 pt-2 pb-6 space-y-4 ac-stagger">
         {entry.sections.map((s) => (
           <SectionCard key={s.id} section={s} />
         ))}
@@ -87,9 +145,17 @@ function Entry({ entry, primary }: { entry: Changelog; primary: boolean }) {
   );
 }
 
-function Header({ entry, primary }: { entry: Changelog; primary: boolean }) {
+function Header({
+  entry,
+  primary,
+  onClose,
+}: {
+  entry: Changelog;
+  primary: boolean;
+  onClose: () => void;
+}) {
   return (
-    <div className="px-8 pt-7 pb-5 flex items-start justify-between gap-6 border-b border-white/[0.06]">
+    <div className="px-7 pt-6 pb-4 flex items-start justify-between gap-6 border-b border-white/[0.06]">
       <div>
         <div className="flex items-center gap-3 mb-2">
           {primary ? (
@@ -112,40 +178,45 @@ function Header({ entry, primary }: { entry: Changelog; primary: boolean }) {
             {primary ? ` · ${t("just installed", "appena installato")}` : ""}
           </span>
         </div>
-        <h1 className="text-[28px] font-semibold leading-tight">
+        <h1 className="text-[26px] font-semibold leading-tight">
           {primary
             ? t("What's new in Agent Code", "Novità in Agent Code")
             : t(`Previously, in v${entry.version}`, `In precedenza, nella v${entry.version}`)}
         </h1>
         {entry.tagline ? (
-          <p className="font-dm text-[14px] text-white/55 mt-1">{entry.tagline}</p>
+          <p className="font-dm text-[13.5px] text-white/55 mt-1.5 max-w-[640px]">
+            {entry.tagline}
+          </p>
         ) : null}
       </div>
-      {primary ? <CloseButton current={entry.version} /> : null}
+      {primary ? (
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/60 text-lg leading-none transition hover:bg-white/10 shrink-0"
+          style={{ background: "rgba(255, 255, 255, 0.05)" }}
+          aria-label={t("Close", "Chiudi")}
+        >
+          ×
+        </button>
+      ) : null}
     </div>
   );
 }
 
-function CloseButton({ current }: { current: string }) {
-  return (
-    <button
-      type="button"
-      onClick={() => post({ type: "changelog/markSeen", version: current })}
-      className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/60 text-lg leading-none transition hover:bg-white/10"
-      style={{ background: "rgba(255, 255, 255, 0.05)" }}
-      aria-label={t("Close", "Chiudi")}
-    >
-      ×
-    </button>
-  );
-}
-
-function Footer({ current }: { current: string }) {
+function Footer({
+  current,
+  onClose,
+}: {
+  current: string;
+  onClose: (markSeen: boolean) => void;
+}) {
   const [disableArmed, setDisableArmed] = useState(false);
   const releaseUrl = `https://github.com/elyas-tirit/Agent-Code/releases/tag/v${current}`;
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 mt-4 backdrop-blur-md border border-white/[0.08] rounded-[22px] px-8 py-5 flex items-center justify-between gap-4 flex-wrap"
+    <div
+      className="border-t border-white/[0.08] px-7 py-4 flex items-center justify-between gap-4 flex-wrap"
       style={{ background: "rgba(14, 14, 14, 0.85)" }}
     >
       <button
@@ -154,7 +225,7 @@ function Footer({ current }: { current: string }) {
         className="flex items-center gap-2.5 font-dm text-[13px] text-white/[0.68] cursor-pointer"
       >
         <span
-          className="w-8 h-[18px] rounded-full relative transition"
+          className="w-8 h-[18px] rounded-full relative transition-colors"
           style={{ background: disableArmed ? "#4067e8" : "rgba(255, 255, 255, 0.12)" }}
         >
           <span
@@ -174,11 +245,11 @@ function Footer({ current }: { current: string }) {
         </button>
         <button
           type="button"
-          onClick={() =>
-            disableArmed
-              ? post({ type: "changelog/disable" })
-              : post({ type: "changelog/markSeen", version: current })
-          }
+          onClick={() => {
+            if (disableArmed) post({ type: "changelog/disable" });
+            // Always mark current as seen so we don't pop it again next launch.
+            onClose(true);
+          }}
           className="px-5 py-2 rounded-lg font-medium text-[13.5px] transition hover:brightness-110"
           style={{
             background: "linear-gradient(135deg, #4067e8 0%, #5f7dff 100%)",
@@ -188,29 +259,6 @@ function Footer({ current }: { current: string }) {
           {t("Got it, let's go", "Capito, andiamo")}
         </button>
       </div>
-    </div>
-  );
-}
-
-function Background() {
-  return (
-    <div
-      aria-hidden
-      className="fixed inset-0 pointer-events-none opacity-60"
-      style={{
-        backgroundImage:
-          "radial-gradient(rgba(64, 103, 232, 0.15) 1px, transparent 1.5px), radial-gradient(rgba(112, 255, 243, 0.08) 1px, transparent 1.5px)",
-        backgroundSize: "240px 240px, 400px 400px",
-        backgroundPosition: "0 0, 90px 130px",
-      }}
-    />
-  );
-}
-
-function Empty() {
-  return (
-    <div className="min-h-screen flex items-center justify-center text-white/40 font-dm">
-      {t("Nothing new to show.", "Nessuna novità da mostrare.")}
     </div>
   );
 }

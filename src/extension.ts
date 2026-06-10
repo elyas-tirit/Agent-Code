@@ -6,7 +6,6 @@ import { AgentManager, BackendChoice, PersistedAgent } from "./agents/AgentManag
 import type { EffortLevel, PermissionMode } from "./shared/protocol";
 import { AgentsDashboardPanel } from "./panels/AgentsDashboardPanel";
 import { DesignWorkspacePanel } from "./panels/DesignWorkspacePanel";
-import { ChangelogPanel } from "./panels/ChangelogPanel";
 import { JsonFileStore } from "./persistence";
 import { resolveLang, setHostLang, t } from "./i18n";
 import { checkForUpdate } from "./update/checkForUpdate";
@@ -52,15 +51,21 @@ async function maybeShowChangelog(context: vscode.ExtensionContext): Promise<voi
     if (!lastSeen) await context.globalState.update(CHANGELOG_LAST_SEEN_KEY, current);
     return;
   }
-  ChangelogPanel.createOrShow(
-    context,
-    bundle,
-    (v) => void context.globalState.update(CHANGELOG_LAST_SEEN_KEY, v),
-    () =>
-      void vscode.workspace
-        .getConfiguration("agentCode")
-        .update("showPatchNotesOnUpdate", false, vscode.ConfigurationTarget.Global),
-  );
+  // Wait a tick after activation so the dashboard webview has time to render
+  // before we tell it to overlay the changelog — otherwise the post fires
+  // before the message handler is wired and we lose the open.
+  setTimeout(async () => {
+    AgentsDashboardPanel.showChangelog(
+      context,
+      await getManager(context),
+      bundle,
+      (v) => void context.globalState.update(CHANGELOG_LAST_SEEN_KEY, v),
+      () =>
+        void vscode.workspace
+          .getConfiguration("agentCode")
+          .update("showPatchNotesOnUpdate", false, vscode.ConfigurationTarget.Global),
+    );
+  }, 800);
 }
 
 function resolveClaudePath(configured: string): string | undefined {
@@ -249,7 +254,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const lang = applyLang();
       AgentsDashboardPanel.broadcastLang(lang);
       DesignWorkspacePanel.broadcastLang(lang);
-      ChangelogPanel.broadcastLang(lang);
       manager?.refresh(); // re-emit host-rendered labels (greeting, card states)
     }),
   );
@@ -273,7 +277,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("agentCode.checkForUpdatesNow", () =>
       checkForUpdate(context, { force: true }),
     ),
-    vscode.commands.registerCommand("agentCode.showWhatsNew", () => {
+    vscode.commands.registerCommand("agentCode.showWhatsNew", async () => {
       // Manual trigger: re-shows the panel for the current version even if the
       // user already dismissed it (we pass `undefined` as lastSeen so the loader
       // returns everything up to current).
@@ -288,8 +292,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         );
         return;
       }
-      ChangelogPanel.createOrShow(
+      AgentsDashboardPanel.showChangelog(
         context,
+        await getManager(context),
         bundle,
         (v) => void context.globalState.update(CHANGELOG_LAST_SEEN_KEY, v),
         () =>
@@ -311,22 +316,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // On window reload, revive the dashboard (with restored agents) and drop dead
   // design tabs instead of leaving "cannot restore" placeholders.
-  const reviver = (viewType: "agentCode.dashboard" | "agentCode.design" | "agentCode.changelog") =>
+  const reviver = (viewType: "agentCode.dashboard" | "agentCode.design") =>
     vscode.window.registerWebviewPanelSerializer(viewType, {
       async deserializeWebviewPanel(panel: vscode.WebviewPanel) {
-        // Drop revived tabs (no live state); the dashboard reopens itself below.
-        // The changelog is a one-shot panel — no value in restoring it on reload.
         panel.dispose();
         if (viewType === "agentCode.dashboard") {
           AgentsDashboardPanel.createOrShow(context, await getManager(context));
         }
       },
     });
-  context.subscriptions.push(
-    reviver("agentCode.dashboard"),
-    reviver("agentCode.design"),
-    reviver("agentCode.changelog"),
-  );
+  context.subscriptions.push(reviver("agentCode.dashboard"), reviver("agentCode.design"));
 
   const openOnStartup = vscode.workspace
     .getConfiguration("agentCode")

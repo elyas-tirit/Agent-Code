@@ -1,0 +1,30 @@
+{
+  "version": "0.0.5",
+  "releasedAt": "2026-06-10",
+  "tagline": "Two fixes to the patch-notes panel itself — it now appears as an overlay over the dashboard (no more separate tab) and scrolls properly when there's a lot to read.",
+  "highlights": [
+    { "emoji": "🪟", "text": "Patch notes now overlay the dashboard", "accent": "blue" },
+    { "emoji": "📜", "text": "Long changelogs scroll correctly", "accent": "cyan" }
+  ],
+  "sections": [
+    {
+      "id": "overlay-not-tab",
+      "emoji": "🪟",
+      "title": "Patch notes appear as an overlay, not a new tab",
+      "subtitle": "The 'What's New' panel now opens *over* the Agents dashboard instead of as a separate editor tab.",
+      "accent": "blue",
+      "badge": { "label": "fix", "accent": "amber" },
+      "body": "When v0.0.4 introduced the patch-notes panel, it opened as its own editor tab — which felt like a parallel workspace instead of a notification. Now it appears as a **modal overlay** with the dashboard softly blurred behind it. Closing the panel (× / ESC / clicking the backdrop / **Got it**) drops you straight back to the agents grid where you were.\n\nIf the dashboard isn't open when an update lands, it'll be opened first; the overlay then appears on top.",
+      "techDetails": "Removed the standalone `src/panels/ChangelogPanel.ts` (and its `agentCode.changelog` webview view type). The dashboard panel now exposes a static `showChangelog(...)` that posts a `changelog/show` HostMessage carrying the bundle. The dashboard webview keeps the bundle in local state and renders `<ChangelogOverlay />` on top of `<AgentsDashboard />`, following the same pattern as `SettingsModal` / `UsageModal`. Dismiss/disable messages still round-trip through the host to update `globalState[agentCode.changelog.lastSeenVersion]` and the `agentCode.showPatchNotesOnUpdate` setting."
+    },
+    {
+      "id": "scroll-fix",
+      "emoji": "📜",
+      "title": "Scrolling works on long changelogs",
+      "subtitle": "If the panel is taller than the viewport, you can now actually read the bottom of it.",
+      "accent": "cyan",
+      "body": "The previous version capped the panel at `min-height: 100vh` inside a `body { overflow: hidden }` — meaning anything past the fold got clipped without a scrollbar. The new overlay uses a fixed-height card with `overflow-y-auto` on the scrolling region, so long releases (multiple entries, multi-version skips) scroll properly inside the modal.",
+      "techDetails": "Card frame is `flex flex-col` with `max-h-[92vh]`; the content region is `min-h-0 flex-1 overflow-y-auto` so the footer stays pinned to the bottom of the card and the entries scroll under it."
+    }
+  ]
+}

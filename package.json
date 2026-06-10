@@ -2,7 +2,7 @@
   "name": "agent-code",
   "displayName": "Agent Code",
   "description": "Designer-friendly VS Code mod: multi-agent dashboard + Design/Preview/Code workspace, powered by the Claude Agent SDK.",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "elyas-tirit",
   "author": "Elyas Tirit",
   "license": "MIT",

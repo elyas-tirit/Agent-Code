@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import type { DashboardState } from "@shared/protocol";
+import type { ChangelogBundle, DashboardState } from "@shared/protocol";
 import { mediaUrl, onHostMessage, post } from "../../vscode";
 import { TopBar } from "./TopBar";
 import { AgentCard } from "./AgentCard";
 import { NewAgentCard } from "./NewAgentCard";
 import { UsageModal } from "../../ui/UsageModal";
 import { SettingsModal } from "../../ui/SettingsModal";
+import { ChangelogOverlay } from "../changelog/ChangelogView";
 import { t } from "../../i18n";
 
 const EMPTY: DashboardState = {
@@ -18,12 +19,14 @@ export function AgentsDashboard({ initial }: { initial?: DashboardState }) {
   const [state, setState] = useState<DashboardState>(initial ?? EMPTY);
   const [usageOpen, setUsageOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [changelog, setChangelog] = useState<ChangelogBundle | undefined>(undefined);
 
   useEffect(() => {
     return onHostMessage((msg) => {
       if (msg.type === "init" && msg.view === "dashboard") setState(msg.state);
       else if (msg.type === "dashboard/state") setState(msg.state);
       else if (msg.type === "usage/update") setState((s) => ({ ...s, usage: msg.usage }));
+      else if (msg.type === "changelog/show") setChangelog(msg.bundle);
     });
   }, []);
 
@@ -79,6 +82,12 @@ export function AgentsDashboard({ initial }: { initial?: DashboardState }) {
         />
       )}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {changelog && (
+        <ChangelogOverlay
+          bundle={changelog}
+          onClose={() => setChangelog(undefined)}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { AgentManager } from "../agents/AgentManager";
-import { ClientMessage, HostMessage } from "../shared/protocol";
+import { ChangelogBundle, ClientMessage, HostMessage } from "../shared/protocol";
 import { getWebviewHtml } from "./html";
 import { DesignWorkspacePanel } from "./DesignWorkspacePanel";
 import { readAppSettings, writeAppSettings } from "./shared";
@@ -13,9 +13,34 @@ export class AgentsDashboardPanel {
   static broadcastLang(lang: "en" | "it"): void {
     AgentsDashboardPanel.current?.post({ type: "lang/set", lang });
   }
+
+  /**
+   * Open the dashboard (revealing if already up) and show the changelog as an
+   * in-dashboard overlay. We deliberately route changelog through the dashboard
+   * webview instead of a separate `vscode.WebviewPanel`, so it appears as a
+   * modal *over* the agents grid — not as a parallel editor tab.
+   */
+  static showChangelog(
+    context: vscode.ExtensionContext,
+    manager: AgentManager,
+    bundle: ChangelogBundle,
+    onMarkSeen: (version: string) => void,
+    onDisable: () => void,
+  ): void {
+    AgentsDashboardPanel.createOrShow(context, manager);
+    const inst = AgentsDashboardPanel.current!;
+    inst.changelogMarkSeen = onMarkSeen;
+    inst.changelogDisable = onDisable;
+    inst.post({ type: "changelog/show", bundle });
+  }
+
   private readonly panel: vscode.WebviewPanel;
   private disposables: vscode.Disposable[] = [];
   private mediaUri = "";
+  /** Set when `showChangelog` is in flight — wires the webview's dismiss /
+   *  disable messages back to the host-side high-water mark + setting. */
+  private changelogMarkSeen?: (version: string) => void;
+  private changelogDisable?: () => void;
 
   static createOrShow(context: vscode.ExtensionContext, manager: AgentManager): void {
     const column = vscode.ViewColumn.One;
@@ -96,6 +121,21 @@ export class AgentsDashboardPanel {
       case "settings/set":
         await writeAppSettings(message.patch);
         this.post({ type: "settings/values", settings: readAppSettings() });
+        break;
+      case "changelog/markSeen":
+        this.changelogMarkSeen?.(message.version);
+        this.changelogMarkSeen = undefined;
+        this.changelogDisable = undefined;
+        break;
+      case "changelog/disable":
+        this.changelogDisable?.();
+        // Disable also implies "seen" for the current version so we don't
+        // re-show on next launch even before the setting takes effect.
+        this.changelogMarkSeen = undefined;
+        this.changelogDisable = undefined;
+        break;
+      case "changelog/openUrl":
+        void vscode.env.openExternal(vscode.Uri.parse(message.url));
         break;
       default:
         break;

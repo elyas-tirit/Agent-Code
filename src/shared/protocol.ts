@@ -1,7 +1,7 @@
 // Shared message protocol + domain types between the extension host and the
 // webview UI. Imported by both `src/` (esbuild) and `webview/` (vite).
 
-export type WebviewView = "dashboard" | "design" | "changelog";
+export type WebviewView = "dashboard" | "design";
 
 // ---------------------------------------------------------------------------
 // Changelog ("What's new" panel shown after an update)
@@ -371,7 +371,6 @@ export const EFFORT_OPTIONS: EffortLevel[] = ["low", "medium", "high", "xhigh", 
 export type HostMessage =
   | { type: "init"; view: "dashboard"; state: DashboardState; media: string; lang?: "en" | "it" }
   | { type: "init"; view: "design"; state: DesignState; media: string; lang?: "en" | "it" }
-  | { type: "init"; view: "changelog"; state: ChangelogBundle; media: string; lang?: "en" | "it" }
   | { type: "lang/set"; lang: "en" | "it" }
   | { type: "dashboard/state"; state: DashboardState }
   | { type: "usage/update"; usage: UsageInfo }
@@ -395,7 +394,8 @@ export type HostMessage =
   | { type: "code/tree"; nodes: CodeNode[] }
   | { type: "code/file"; path: string; content: string; language: string }
   | { type: "settings/values"; settings: AppSettings }
-  | { type: "preview/proxy"; proxyUrl: string; previewUrl: string };
+  | { type: "preview/proxy"; proxyUrl: string; previewUrl: string }
+  | { type: "changelog/show"; bundle: ChangelogBundle };
 
 // ---------------------------------------------------------------------------
 // Webview -> Extension

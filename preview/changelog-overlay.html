@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="/dist/webview/webview.css" rel="stylesheet" />
+    <title>AC — Changelog overlay (live)</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.acquireVsCodeApi = () => ({
+        postMessage(m) { console.log("[preview] postMessage", m); },
+        getState() {}, setState() {},
+      });
+      // Boot the dashboard view with some agents behind, then post `changelog/show`
+      // after mount so the overlay renders ON TOP of the dashboard — exactly how
+      // it'll behave in the real webview after an update.
+      const tokens = { input: 18420, output: 5234, cacheRead: 120400, cacheCreation: 8200, total: 23654, costUsd: 0.34 };
+      const idle = (id, name) => ({
+        id, name, status: "idle", statusLabel: "Awaiting orders", accent: "blue", tokens,
+        actions: [{ id: "apri", label: "New orders", kind: "primary" }, { id: "fire-agent", label: "Fire Agent", kind: "secondary" }],
+      });
+      const working = (id, name, desc) => ({
+        id, name, status: "working", statusLabel: "Working", accent: "neutral", tokens,
+        description: desc, actions: [],
+      });
+      window.__AGENT_CODE__ = {
+        view: "dashboard",
+        media: "/dist/webview/media",
+        lang: "en",
+        state: {
+          greeting: "Good afternoon, Elyas",
+          usage: { percent: 23, resetsInLabel: "Resets in 2h 40m", known: true, tokens },
+          agents: [
+            idle("1", "Scraping agent"),
+            working("2", "Refactor auth module", "Reading existing tokens flow..."),
+            idle("3", "Homepage redesign"),
+            working("4", "Add validation to checkout", "Wiring up the Zod schemas..."),
+          ],
+        },
+      };
+      // Fetch the actual JSON the extension would read, then post the message
+      // a beat after the bundle mounts.
+      fetch("/media/changelogs/0.0.4.json")
+        .then((r) => r.json())
+        .then((entry) => {
+          const s = document.createElement("script");
+          s.type = "module";
+          s.src = "/dist/webview/webview.js";
+          s.onload = () => {
+            // Wait for React mount, then post the message.
+            setTimeout(() => {
+              window.dispatchEvent(
+                new MessageEvent("message", {
+                  data: { type: "changelog/show", bundle: { current: "0.0.5", entries: [entry] } },
+                }),
+              );
+            }, 250);
+          };
+          document.body.appendChild(s);
+        });
+    </script>
+  </body>
+</html>
