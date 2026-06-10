@@ -1,7 +1,83 @@
 // Shared message protocol + domain types between the extension host and the
 // webview UI. Imported by both `src/` (esbuild) and `webview/` (vite).
 
-export type WebviewView = "dashboard" | "design";
+export type WebviewView = "dashboard" | "design" | "changelog";
+
+// ---------------------------------------------------------------------------
+// Changelog ("What's new" panel shown after an update)
+// ---------------------------------------------------------------------------
+
+/** Accent palette shared by chips/cards. Mirrors the dashboard's accent scheme. */
+export type ChangelogAccent = "blue" | "cyan" | "violet" | "amber" | "rose" | "neutral";
+
+export interface ChangelogHighlight {
+  emoji: string;
+  text: string;
+  accent?: ChangelogAccent;
+}
+
+/** A live "visual" rendered inside a section card. Data-driven so the JSON
+ *  changelog files can fully describe the panel without shipping screenshots
+ *  that bit-rot. Add new kinds here as needed. */
+export type ChangelogVisual =
+  | {
+      kind: "toast";
+      title: string;
+      body?: string;
+      buttons: { label: string; primary?: boolean }[];
+    }
+  | {
+      kind: "palette";
+      query: string;
+      items: { title: string; category: string; active?: boolean }[];
+    }
+  | {
+      kind: "sizeChart";
+      rows: { label: string; size: string; weight: number; color: "before" | "after" }[];
+    }
+  | {
+      kind: "image";
+      /** Path under `dist/webview/media/` (webview-relative). */
+      src: string;
+      alt: string;
+    };
+
+export interface ChangelogSection {
+  id: string;
+  emoji: string;
+  title: string;
+  subtitle?: string;
+  accent: ChangelogAccent;
+  /** Small top-right pill (e.g. "new", "perf"). */
+  badge?: { label: string; accent?: ChangelogAccent };
+  /** Main body, rendered as markdown. Should explain the *why* before the *what*. */
+  body: string;
+  /** Optional collapsible "for the curious" block — markdown, tech-leaning. */
+  techDetails?: string;
+  /** Optional live visual rendered between the header and the body. */
+  visual?: ChangelogVisual;
+}
+
+export interface Changelog {
+  /** Semver, without leading "v" (e.g. "0.0.4"). */
+  version: string;
+  /** ISO 8601 date of the release. */
+  releasedAt: string;
+  /** Tagline shown below the H1 title (designer-friendly summary). */
+  tagline?: string;
+  /** One-liner chips at the top of the panel. */
+  highlights: ChangelogHighlight[];
+  /** Detailed entries — the meat of the panel. */
+  sections: ChangelogSection[];
+}
+
+/** What the host hands the webview when the changelog panel opens. */
+export interface ChangelogBundle {
+  /** Current extension version (e.g. "0.0.4"). */
+  current: string;
+  /** Changelogs newer than the user's last-seen version, newest first. */
+  entries: Changelog[];
+}
 
 /** Real agent run states, mapped from the SDK's session_state_changed. */
 export type AgentStatus =
@@ -295,6 +371,7 @@ export const EFFORT_OPTIONS: EffortLevel[] = ["low", "medium", "high", "xhigh", 
 export type HostMessage =
   | { type: "init"; view: "dashboard"; state: DashboardState; media: string; lang?: "en" | "it" }
   | { type: "init"; view: "design"; state: DesignState; media: string; lang?: "en" | "it" }
+  | { type: "init"; view: "changelog"; state: ChangelogBundle; media: string; lang?: "en" | "it" }
   | { type: "lang/set"; lang: "en" | "it" }
   | { type: "dashboard/state"; state: DashboardState }
   | { type: "usage/update"; usage: UsageInfo }
@@ -352,4 +429,7 @@ export type ClientMessage =
   | { type: "settings/effort"; effort: EffortLevel }
   | { type: "settings/openUsage" }
   | { type: "settings/get" }
-  | { type: "settings/set"; patch: Partial<AppSettings> };
+  | { type: "settings/set"; patch: Partial<AppSettings> }
+  | { type: "changelog/markSeen"; version: string }
+  | { type: "changelog/disable" }
+  | { type: "changelog/openUrl"; url: string };

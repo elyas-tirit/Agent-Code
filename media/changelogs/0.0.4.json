@@ -1,0 +1,75 @@
+{
+  "version": "0.0.4",
+  "releasedAt": "2026-06-10",
+  "tagline": "What's new since you last opened Agent Code — built so designers and tech folks both get what shipped.",
+  "highlights": [
+    { "emoji": "📰", "text": "This very panel — patch notes on update", "accent": "blue" },
+    { "emoji": "🔄", "text": "Auto-update from GitHub Releases", "accent": "cyan" },
+    { "emoji": "⚡", "text": "Updates 17× smaller (~9 MB)", "accent": "violet" }
+  ],
+  "sections": [
+    {
+      "id": "patch-notes",
+      "emoji": "📰",
+      "title": "Patch notes on update",
+      "subtitle": "You're looking at it. Every release now opens a panel like this with what changed.",
+      "accent": "blue",
+      "badge": { "label": "new", "accent": "blue" },
+      "body": "When you update Agent Code, this panel pops up once with the highlights of every version you skipped. Each entry is written to be useful **both for designers and tech folks** — the *why* in plain language, the *how* tucked behind a collapsible block for whoever wants to dig in.\n\nYou can turn it off anytime with the toggle at the bottom, or reopen it from the Command Palette: **Agent Code: What's New**.",
+      "techDetails": "Changelogs live as one JSON per version under `media/changelogs/<version>.json`. The host loads every file with `version > lastSeenVersion && version <= currentVersion` from `globalState`, hands the bundle to the webview, and stores the new high-water mark when you dismiss the panel. The visuals (toast, palette, size chart) are data-driven React components — no PNGs to maintain."
+    },
+    {
+      "id": "auto-update",
+      "emoji": "🔄",
+      "title": "Auto-update via GitHub Releases",
+      "subtitle": "One-click installs. No more chasing the latest .vsix.",
+      "accent": "cyan",
+      "body": "When a new version ships, every installed copy checks GitHub Releases every 6 hours and offers you the new package right inside VS Code. Click **Update**, a progress bar streams the download, VS Code installs it, you reload the window. That's the loop.\n\nThe check is fail-soft: no network, no toast. Opt out anytime from `agentCode.checkForUpdates`.",
+      "techDetails": "The extension polls `repos/elyas-tirit/Agent-Code/releases/latest`, parses the semver tag, and compares to `package.json`. Throttle (last-check timestamp) and the per-version skip live in `globalState`. The `.vsix` streams via `fetch` + `Readable.fromWeb` piped through a counting `Transform` into `fs.createWriteStream` — so the progress bar is real and a 70 MB download never allocates 70 MB on the JS heap. Install goes through `workbench.extensions.installExtension` with a `Uri.file`.",
+      "visual": {
+        "kind": "toast",
+        "title": "Agent Code 0.0.4 is available",
+        "body": "Three changes since your version — including this very panel.",
+        "buttons": [
+          { "label": "Skip this version" },
+          { "label": "Later" },
+          { "label": "Update", "primary": true }
+        ]
+      }
+    },
+    {
+      "id": "slim-vsix",
+      "emoji": "⚡",
+      "title": "Updates are 17× lighter",
+      "subtitle": "Bundled binaries you didn't need — gone.",
+      "accent": "violet",
+      "badge": { "label": "perf", "accent": "cyan" },
+      "body": "Every previous build dragged a ~150 MB platform-specific Claude CLI binary inside the package — useless, because Agent Code uses your globally-installed Claude Code CLI. Dropping those native packages from the `.vsix` shrinks the install (and every future update) to about **9 MB**.\n\nIn practice: updates now finish in seconds even on a slow connection, and the install footprint stops eating disk for no reason.",
+      "techDetails": "Added `node_modules/@anthropic-ai/claude-agent-sdk-*/**` to `.vscodeignore`. The SDK still works because we pass `pathToClaudeCodeExecutable` explicitly from `resolveClaudePath()` — pointing at the user's installed CLI (`/opt/homebrew/bin/claude`, etc.), never the bundled copy. Also dropped `CLAUDE.md` (internal handoff) and `.github/` from the package.",
+      "visual": {
+        "kind": "sizeChart",
+        "rows": [
+          { "label": "v0.0.2", "size": "151 MB", "weight": 100, "color": "before" },
+          { "label": "v0.0.3", "size": "9 MB", "weight": 6, "color": "after" }
+        ]
+      }
+    },
+    {
+      "id": "check-now",
+      "emoji": "🔍",
+      "title": "Manual \"Check for Updates\" command",
+      "subtitle": "Don't want to wait 6 hours? Trigger the check on demand.",
+      "accent": "amber",
+      "body": "Hit **⇧⌘P** → \"Agent Code: Check for Updates\". The extension queries GitHub right away, bypassing the 6-hour throttle, and either prompts to install or tells you you're already on the latest. Useful when a release just shipped and you don't feel like waiting.",
+      "visual": {
+        "kind": "palette",
+        "query": "> agent code check",
+        "items": [
+          { "title": "Agent Code: Check for Updates", "category": "Agent Code", "active": true },
+          { "title": "Agent Code: What's New", "category": "Agent Code" },
+          { "title": "Agent Code: Open Agents Dashboard", "category": "Agent Code" }
+        ]
+      }
+    }
+  ]
+}

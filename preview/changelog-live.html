@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="/dist/webview/webview.css" rel="stylesheet" />
+    <title>AC — Changelog (live render)</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Stub the vscode API the way preview/dashboard.html does — postMessage no-ops,
+      // bootstrap delivers a ChangelogBundle so the React tree renders the panel.
+      window.acquireVsCodeApi = () => ({
+        postMessage(m) {
+          console.log("[preview] postMessage", m);
+        },
+        getState() {},
+        setState() {},
+      });
+      // Load the actual changelog JSON the extension would read.
+      fetch("/media/changelogs/0.0.4.json")
+        .then((r) => r.json())
+        .then((entry) => {
+          window.__AGENT_CODE__ = {
+            view: "changelog",
+            media: "/dist/webview/media",
+            lang: "en",
+            state: { current: "0.0.4", entries: [entry] },
+          };
+          // The bundle reads __AGENT_CODE__ at import time, so we have to import
+          // it AFTER the bootstrap object is in place.
+          const s = document.createElement("script");
+          s.type = "module";
+          s.src = "/dist/webview/webview.js";
+          document.body.appendChild(s);
+        });
+    </script>
+  </body>
+</html>

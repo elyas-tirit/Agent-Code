@@ -6,13 +6,62 @@ import { AgentManager, BackendChoice, PersistedAgent } from "./agents/AgentManag
 import type { EffortLevel, PermissionMode } from "./shared/protocol";
 import { AgentsDashboardPanel } from "./panels/AgentsDashboardPanel";
 import { DesignWorkspacePanel } from "./panels/DesignWorkspacePanel";
+import { ChangelogPanel } from "./panels/ChangelogPanel";
 import { JsonFileStore } from "./persistence";
 import { resolveLang, setHostLang, t } from "./i18n";
 import { checkForUpdate } from "./update/checkForUpdate";
+import { makeBundle } from "./changelog/loader";
 
 let manager: AgentManager | undefined;
 let managerPromise: Promise<AgentManager> | undefined;
 let store: JsonFileStore<PersistedAgent[]> | undefined;
+
+/** Highest version the user has dismissed in the "What's New" panel. */
+const CHANGELOG_LAST_SEEN_KEY = "agentCode.changelog.lastSeenVersion";
+
+/**
+ * Open the "What's New" panel if the user updated to a version that has a
+ * changelog file they haven't seen yet. First-time installs (no last-seen
+ * entry) silently seed the high-water mark so the panel doesn't pop on a
+ * fresh install — that's a different feature (welcome screen).
+ */
+async function maybeShowChangelog(context: vscode.ExtensionContext): Promise<void> {
+  const enabled = vscode.workspace
+    .getConfiguration("agentCode")
+    .get<boolean>("showPatchNotesOnUpdate", true);
+  if (!enabled) return;
+  const current = context.extension.packageJSON.version as string;
+  const lastSeen = context.globalState.get<string>(CHANGELOG_LAST_SEEN_KEY);
+
+  // Distinguish "fresh install" from "existing user upgrading from a version
+  // before this feature shipped". If agents.json exists in globalStorage, the
+  // user has been here before — they SHOULD see the patch notes (including the
+  // notes for *this* feature). On a truly fresh install we just seed the
+  // high-water mark and exit silently.
+  const agentsFile = path.join(context.globalStorageUri.fsPath, "agents.json");
+  const existingUser = !!lastSeen || fs.existsSync(agentsFile);
+  if (!existingUser) {
+    await context.globalState.update(CHANGELOG_LAST_SEEN_KEY, current);
+    return;
+  }
+
+  const bundle = makeBundle(context.extensionUri, current, lastSeen);
+  if (!bundle) {
+    // Existing user but no notes to show (nothing newer than lastSeen). Still
+    // seed if missing, so we don't reconsider next launch.
+    if (!lastSeen) await context.globalState.update(CHANGELOG_LAST_SEEN_KEY, current);
+    return;
+  }
+  ChangelogPanel.createOrShow(
+    context,
+    bundle,
+    (v) => void context.globalState.update(CHANGELOG_LAST_SEEN_KEY, v),
+    () =>
+      void vscode.workspace
+        .getConfiguration("agentCode")
+        .update("showPatchNotesOnUpdate", false, vscode.ConfigurationTarget.Global),
+  );
+}
 
 function resolveClaudePath(configured: string): string | undefined {
   if (configured && fs.existsSync(configured)) return configured;
@@ -200,6 +249,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const lang = applyLang();
       AgentsDashboardPanel.broadcastLang(lang);
       DesignWorkspacePanel.broadcastLang(lang);
+      ChangelogPanel.broadcastLang(lang);
       manager?.refresh(); // re-emit host-rendered labels (greeting, card states)
     }),
   );
@@ -223,24 +273,60 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("agentCode.checkForUpdatesNow", () =>
       checkForUpdate(context, { force: true }),
     ),
+    vscode.commands.registerCommand("agentCode.showWhatsNew", () => {
+      // Manual trigger: re-shows the panel for the current version even if the
+      // user already dismissed it (we pass `undefined` as lastSeen so the loader
+      // returns everything up to current).
+      const current = context.extension.packageJSON.version as string;
+      const bundle = makeBundle(context.extensionUri, current, undefined);
+      if (!bundle) {
+        void vscode.window.showInformationMessage(
+          t(
+            "Agent Code: no changelog available for this version yet.",
+            "Agent Code: nessun changelog disponibile per questa versione.",
+          ),
+        );
+        return;
+      }
+      ChangelogPanel.createOrShow(
+        context,
+        bundle,
+        (v) => void context.globalState.update(CHANGELOG_LAST_SEEN_KEY, v),
+        () =>
+          void vscode.workspace
+            .getConfiguration("agentCode")
+            .update("showPatchNotesOnUpdate", false, vscode.ConfigurationTarget.Global),
+      );
+    }),
   );
 
   // Update check: fire-and-forget after a short delay so it never delays activation
   // or competes with the dashboard opening. Throttled to once per 6h internally.
   setTimeout(() => void checkForUpdate(context), 3000);
 
+  // "What's new" panel: open once after the user updates to a new version that
+  // ships a changelog file. First-time installs are silenced — we seed the
+  // high-water mark to the current version without showing the panel.
+  void maybeShowChangelog(context);
+
   // On window reload, revive the dashboard (with restored agents) and drop dead
   // design tabs instead of leaving "cannot restore" placeholders.
-  const reviver = (viewType: "agentCode.dashboard" | "agentCode.design") =>
+  const reviver = (viewType: "agentCode.dashboard" | "agentCode.design" | "agentCode.changelog") =>
     vscode.window.registerWebviewPanelSerializer(viewType, {
       async deserializeWebviewPanel(panel: vscode.WebviewPanel) {
+        // Drop revived tabs (no live state); the dashboard reopens itself below.
+        // The changelog is a one-shot panel — no value in restoring it on reload.
         panel.dispose();
         if (viewType === "agentCode.dashboard") {
           AgentsDashboardPanel.createOrShow(context, await getManager(context));
         }
       },
     });
-  context.subscriptions.push(reviver("agentCode.dashboard"), reviver("agentCode.design"));
+  context.subscriptions.push(
+    reviver("agentCode.dashboard"),
+    reviver("agentCode.design"),
+    reviver("agentCode.changelog"),
+  );
 
   const openOnStartup = vscode.workspace
     .getConfiguration("agentCode")

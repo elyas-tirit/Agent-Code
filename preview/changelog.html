@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AC — What's New (mockup)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --ac-bg: #0e0e0e;
+        --ac-primary: #4067e8;
+        --ac-cyan: #70fff3;
+        --ac-amber: #ffd166;
+        --ac-violet: #b794f4;
+        --ac-rose: #fb7185;
+      }
+      html,
+      body {
+        background: var(--ac-bg);
+        color: #fff;
+        font-family: "Host Grotesk", ui-sans-serif, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .font-dm {
+        font-family: "DM Sans", "Host Grotesk", sans-serif;
+      }
+      /* Soft animated gradient border on the modal frame */
+      .ac-frame {
+        position: relative;
+        background: linear-gradient(180deg, #131313 0%, #0c0c0c 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 22px;
+        box-shadow:
+          0 25px 80px rgba(0, 0, 0, 0.6),
+          0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      }
+      .ac-frame::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: 22px;
+        padding: 1px;
+        background: linear-gradient(
+          135deg,
+          rgba(64, 103, 232, 0.45) 0%,
+          rgba(112, 255, 243, 0.25) 35%,
+          rgba(255, 255, 255, 0) 60%,
+          rgba(183, 148, 244, 0.3) 100%
+        );
+        -webkit-mask:
+          linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+      /* Subtle background "stars" / noise */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          radial-gradient(rgba(64, 103, 232, 0.15) 1px, transparent 1.5px),
+          radial-gradient(rgba(112, 255, 243, 0.08) 1px, transparent 1.5px);
+        background-size:
+          240px 240px,
+          400px 400px;
+        background-position:
+          0 0,
+          90px 130px;
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .pill {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .chip {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.86);
+      }
+      .chip .icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .section-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 18px;
+        overflow: hidden;
+      }
+      .section-head {
+        display: flex;
+        gap: 14px;
+        padding: 18px 22px 14px;
+        align-items: flex-start;
+      }
+      .section-head .accent-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      .section-body {
+        padding: 0 22px 18px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        line-height: 1.65;
+        color: rgba(255, 255, 255, 0.78);
+      }
+      .section-body p {
+        margin: 0 0 10px;
+      }
+      .section-body strong {
+        color: #fff;
+        font-weight: 600;
+      }
+      .section-body code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.88em;
+        background: rgba(255, 255, 255, 0.07);
+        padding: 1px 6px;
+        border-radius: 5px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .visual {
+        margin: 8px 22px 18px;
+        background:
+          radial-gradient(
+            120% 100% at 0% 0%,
+            rgba(64, 103, 232, 0.12) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            120% 100% at 100% 100%,
+            rgba(112, 255, 243, 0.1) 0%,
+            transparent 60%
+          ),
+          #0a0a0a;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 22px;
+        min-height: 160px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .tech-toggle {
+        margin: 4px 22px 18px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        font-family: "DM Sans", sans-serif;
+      }
+      .tech-toggle summary {
+        cursor: pointer;
+        padding: 10px 14px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.7);
+        letter-spacing: 0.02em;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .tech-toggle summary::-webkit-details-marker {
+        display: none;
+      }
+      .tech-toggle summary::after {
+        content: "›";
+        font-size: 18px;
+        line-height: 1;
+        transition: transform 0.2s ease;
+        color: rgba(255, 255, 255, 0.45);
+      }
+      .tech-toggle[open] summary::after {
+        transform: rotate(90deg);
+      }
+      .tech-toggle .content {
+        padding: 0 14px 14px;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.65);
+      }
+      .tech-toggle .content code {
+        font-family: ui-monospace, monospace;
+        font-size: 0.92em;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      /* Mock VS Code toast */
+      .vsc-toast {
+        background: #252526;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 14px 16px;
+        font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+        color: #cccccc;
+        max-width: 420px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+        position: relative;
+      }
+      .vsc-toast .title {
+        color: #fff;
+        margin-bottom: 8px;
+        line-height: 1.4;
+      }
+      .vsc-toast .row {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 10px;
+      }
+      .vsc-toast button {
+        background: #0e639c;
+        color: #fff;
+        border: none;
+        padding: 5px 14px;
+        font-size: 12.5px;
+        border-radius: 2px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .vsc-toast button.sec {
+        background: #3a3d41;
+      }
+      /* Mock command palette */
+      .palette {
+        background: #252526;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        font-family: -apple-system, "Segoe UI", sans-serif;
+        font-size: 13px;
+        color: #cccccc;
+        width: 560px;
+        max-width: 100%;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+      }
+      .palette .input {
+        background: #3c3c3c;
+        padding: 6px 10px;
+        border-bottom: 1px solid #1e1e1e;
+      }
+      .palette .input .caret {
+        display: inline-block;
+        width: 1px;
+        height: 14px;
+        background: #fff;
+        vertical-align: middle;
+        margin-left: 2px;
+        animation: blink 1s steps(1) infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+      .palette .item {
+        padding: 6px 12px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 12.5px;
+      }
+      .palette .item.active {
+        background: #094771;
+        color: #fff;
+      }
+      .palette .item .cat {
+        color: #969696;
+        font-size: 11.5px;
+      }
+      /* Bar chart for "lighter updates" */
+      .bar-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 12px;
+      }
+      .bar-row:last-child {
+        margin-bottom: 0;
+      }
+      .bar-label {
+        width: 90px;
+        font-size: 13px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.8);
+        text-align: right;
+      }
+      .bar-wrap {
+        flex: 1;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+      }
+      .bar {
+        height: 100%;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #0a0a0a;
+        white-space: nowrap;
+      }
+      .bar.before {
+        width: 100%;
+        background: linear-gradient(90deg, #fb7185, #f87171);
+      }
+      .bar.after {
+        width: 12.7%;
+        background: linear-gradient(90deg, #70fff3, #4ade80);
+      }
+      /* Toggle for "don't show again" */
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.68);
+        cursor: pointer;
+      }
+      .toggle .switch {
+        width: 32px;
+        height: 18px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        position: relative;
+        transition: background 0.2s;
+      }
+      .toggle .switch::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.2s;
+      }
+      .ac-fade-in {
+        animation: ac-fade 0.4s ease both;
+      }
+      @keyframes ac-fade {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .ac-stagger > * {
+        animation: ac-fade 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      .ac-stagger > *:nth-child(1) {
+        animation-delay: 0.04s;
+      }
+      .ac-stagger > *:nth-child(2) {
+        animation-delay: 0.12s;
+      }
+      .ac-stagger > *:nth-child(3) {
+        animation-delay: 0.2s;
+      }
+      .ac-stagger > *:nth-child(4) {
+        animation-delay: 0.28s;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen p-8 md:p-12">
+    <div class="ac-frame max-w-[900px] mx-auto ac-fade-in">
+      <!-- HEADER -->
+      <div class="px-8 pt-7 pb-5 flex items-start justify-between gap-6 border-b border-white/[0.06]">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <div
+              class="w-9 h-9 rounded-xl flex items-center justify-center"
+              style="background: linear-gradient(135deg, #4067e8 0%, #70fff3 100%)"
+            >
+              <span class="text-base">✨</span>
+            </div>
+            <span
+              class="pill"
+              style="background: rgba(64, 103, 232, 0.12); color: #a3b7ff; border: 1px solid rgba(64, 103, 232, 0.25)"
+              >v0.0.3 · just installed</span
+            >
+          </div>
+          <h1 class="text-[28px] font-semibold leading-tight">What's new in Agent Code</h1>
+          <p class="font-dm text-[14px] text-white/55 mt-1">
+            Three changes since v0.0.2 — built so designers and tech folks both get what shipped.
+          </p>
+        </div>
+        <button
+          class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 text-lg leading-none transition"
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </div>
+
+      <!-- HIGHLIGHTS -->
+      <div class="px-8 pt-6 pb-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span
+            class="pill"
+            style="background: rgba(112, 255, 243, 0.1); color: #70fff3; border: 1px solid rgba(112, 255, 243, 0.25)"
+            >Highlights</span
+          >
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 ac-stagger">
+          <div class="chip">
+            <div class="icon" style="background: rgba(64, 103, 232, 0.18); color: #a3b7ff">🔄</div>
+            <div>Auto-update from GitHub Releases</div>
+          </div>
+          <div class="chip">
+            <div class="icon" style="background: rgba(112, 255, 243, 0.14); color: #70fff3">⚡</div>
+            <div>Updates 17× smaller, ~9 MB</div>
+          </div>
+          <div class="chip">
+            <div class="icon" style="background: rgba(183, 148, 244, 0.16); color: #b794f4">🔍</div>
+            <div>"Check for Updates" command</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTIONS -->
+      <div class="px-8 pt-2 pb-6 space-y-5 ac-stagger">
+        <!-- 1. AUTO-UPDATE -->
+        <div class="section-card">
+          <div class="section-head">
+            <div class="accent-icon" style="background: rgba(64, 103, 232, 0.18); color: #a3b7ff">🔄</div>
+            <div class="flex-1">
+              <div class="text-[17px] font-semibold mb-1">Auto-update via GitHub Releases</div>
+              <div class="font-dm text-[13px] text-white/55">
+                One-click installs. No more chasing the latest <code>.vsix</code>.
+              </div>
+            </div>
+            <span
+              class="pill"
+              style="background: rgba(64, 103, 232, 0.12); color: #a3b7ff; border: 1px solid rgba(64, 103, 232, 0.22)"
+              >new</span
+            >
+          </div>
+          <div class="visual">
+            <div class="vsc-toast">
+              <div class="title">
+                <strong>Agent Code 0.0.3 is available</strong> (you have 0.0.2).
+              </div>
+              <div style="color: #969696; font-size: 12px">
+                Three changes since your version — including this very panel.
+              </div>
+              <div class="row">
+                <button class="sec">Skip this version</button>
+                <button class="sec">Later</button>
+                <button>Update</button>
+              </div>
+            </div>
+          </div>
+          <div class="section-body">
+            <p>
+              When a new version of Agent Code ships, every installed copy now checks GitHub
+              Releases every 6 hours and offers you the new <code>.vsix</code> right inside VS Code.
+              Click <strong>Update</strong>, a progress bar streams the download, VS Code installs
+              it, and you reload the window. That's the whole loop.
+            </p>
+            <p>
+              The check is fail-soft: no network, no toast. And you can opt out anytime from
+              <code>agentCode.checkForUpdates</code>.
+            </p>
+          </div>
+          <details class="tech-toggle">
+            <summary>For the curious — how it works</summary>
+            <div class="content">
+              The extension polls <code>repos/elyas-tirit/Agent-Code/releases/latest</code>, parses
+              the semver tag, and compares it to <code>package.json</code> version. State (last
+              check, "skipped" version) lives in <code>globalState</code>. The <code>.vsix</code>
+              is streamed via web <code>fetch</code> + <code>Readable.fromWeb</code> piped through a
+              counting <code>Transform</code> into <code>fs.createWriteStream</code> — so the
+              progress bar is real, not theatrical, and a 70 MB download won't allocate 70 MB of
+              JS heap. Install goes through
+              <code>workbench.extensions.installExtension</code> on a <code>Uri.file</code>.
+            </div>
+          </details>
+        </div>
+
+        <!-- 2. LIGHTER UPDATES -->
+        <div class="section-card">
+          <div class="section-head">
+            <div class="accent-icon" style="background: rgba(112, 255, 243, 0.14); color: #70fff3">⚡</div>
+            <div class="flex-1">
+              <div class="text-[17px] font-semibold mb-1">Updates are 17× lighter</div>
+              <div class="font-dm text-[13px] text-white/55">
+                Bundled binaries you didn't need — gone.
+              </div>
+            </div>
+            <span
+              class="pill"
+              style="background: rgba(112, 255, 243, 0.1); color: #70fff3; border: 1px solid rgba(112, 255, 243, 0.22)"
+              >perf</span
+            >
+          </div>
+          <div class="visual" style="min-height: 140px">
+            <div style="width: 100%; max-width: 520px">
+              <div class="bar-row">
+                <div class="bar-label">v0.0.2</div>
+                <div class="bar-wrap"><div class="bar before">151 MB</div></div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">v0.0.3</div>
+                <div class="bar-wrap"><div class="bar after">9 MB</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="section-body">
+            <p>
+              Every previous build dragged a ~150 MB platform-specific <code>claude</code> binary
+              inside the package — useless, because Agent Code uses your globally-installed Claude
+              Code CLI. Dropping those native packages from the <code>.vsix</code> shrinks the
+              install (and every future update) to about <strong>9 MB</strong>.
+            </p>
+            <p>
+              In practice: updates now finish in seconds even on a slow connection, and the install
+              footprint stops eating disk for no reason.
+            </p>
+          </div>
+          <details class="tech-toggle">
+            <summary>For the curious — what changed</summary>
+            <div class="content">
+              Added <code>node_modules/@anthropic-ai/claude-agent-sdk-*/**</code> to
+              <code>.vscodeignore</code>. The SDK still works because we pass
+              <code>pathToClaudeCodeExecutable</code> explicitly from
+              <code>resolveClaudePath()</code> — pointing at the user's installed CLI
+              (<code>/opt/homebrew/bin/claude</code>, etc.), never the bundled copy. Also dropped
+              <code>CLAUDE.md</code> (internal handoff) and <code>.github/</code> from the package.
+            </div>
+          </details>
+        </div>
+
+        <!-- 3. CHECK FOR UPDATES COMMAND -->
+        <div class="section-card">
+          <div class="section-head">
+            <div class="accent-icon" style="background: rgba(183, 148, 244, 0.16); color: #b794f4">🔍</div>
+            <div class="flex-1">
+              <div class="text-[17px] font-semibold mb-1">Manual "Check for Updates" command</div>
+              <div class="font-dm text-[13px] text-white/55">
+                Don't want to wait 6 hours? Trigger the check on demand.
+              </div>
+            </div>
+          </div>
+          <div class="visual">
+            <div class="palette">
+              <div class="input">&gt; agent code check<span class="caret"></span></div>
+              <div class="item active">
+                <span>Agent Code: Check for Updates</span>
+                <span class="cat">Agent Code</span>
+              </div>
+              <div class="item">
+                <span>Agent Code: Open Agents Dashboard</span>
+                <span class="cat">Agent Code</span>
+              </div>
+              <div class="item">
+                <span>Agent Code: New Agent</span>
+                <span class="cat">Agent Code</span>
+              </div>
+            </div>
+          </div>
+          <div class="section-body">
+            <p>
+              Hit <code>⇧⌘P</code> → "Agent Code: Check for Updates". The extension queries GitHub
+              right away, bypassing the 6-hour throttle, and either prompts to install or tells you
+              you're already on the latest. Useful when a release just shipped and you don't feel
+              like waiting.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div
+        class="px-8 py-5 border-t border-white/[0.06] flex items-center justify-between gap-4 flex-wrap"
+      >
+        <label class="toggle">
+          <div class="switch"></div>
+          Don't show this on update
+        </label>
+        <div class="flex items-center gap-3 font-dm text-[13px]">
+          <a
+            href="https://github.com/elyas-tirit/Agent-Code/releases/tag/v0.0.3"
+            class="text-white/55 hover:text-white/85"
+            >Full release notes ↗</a
+          >
+          <button
+            class="px-5 py-2 rounded-lg font-medium text-[13.5px]"
+            style="
+              background: linear-gradient(135deg, #4067e8 0%, #5f7dff 100%);
+              box-shadow: 0 6px 20px rgba(64, 103, 232, 0.35);
+            "
+          >
+            Got it, let's go
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
